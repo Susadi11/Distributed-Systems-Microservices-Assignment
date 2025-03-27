@@ -2,6 +2,7 @@ import React from 'react';
 import res1 from '../../images/res1.jpeg';
 import res2 from '../../images/res2.jpeg';
 import res3 from '../../images/res3.jpeg';
+import { FaArrowRight } from 'react-icons/fa'; // Import the right arrow icon
 
 export function FeaturedRestaurants() {
     return (
@@ -29,10 +30,15 @@ export function FeaturedRestaurants() {
                             alt="Asian Hotel"
                             className="w-full h-48 object-cover"
                         />
-                        <div className="p-4">
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Asian Hotel</h3>
-                            <p className="text-gray-600">Delivery Fee: 6244</p>
-                            <p className="text-yellow-500 mt-2">★★★★☆ (4,000+) - 15 min</p>
+                        <div className="p-4 flex items-center justify-between"> {/* Flex container for content and arrow */}
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-2">Asian Hotel</h3>
+                                <p className="text-gray-600">Delivery Fee: 6244</p>
+                                <p className="text-yellow-500 mt-2">★★★★☆ (4,000+) - 15 min</p>
+                            </div>
+                            <a href="/menu" className="text-red-600 hover:text-red-800"> {/* Link to menu page */}
+                                <FaArrowRight className="h-5 w-5" />
+                            </a>
                         </div>
                     </div>
 
@@ -43,10 +49,15 @@ export function FeaturedRestaurants() {
                             alt="Herali"
                             className="w-full h-48 object-cover"
                         />
-                        <div className="p-4">
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Herali</h3>
-                            <p className="text-gray-600">Delivery Fee: 6244</p>
-                            <p className="text-yellow-500 mt-2">★★★★☆ (4,000+) - 15 min</p>
+                        <div className="p-4 flex items-center justify-between"> {/* Flex container for content and arrow */}
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-2">Herali</h3>
+                                <p className="text-gray-600">Delivery Fee: 6244</p>
+                                <p className="text-yellow-500 mt-2">★★★★☆ (4,000+) - 15 min</p>
+                            </div>
+                            <a href="/menu" className="text-red-600 hover:text-red-800"> {/* Link to menu page */}
+                                <FaArrowRight className="h-5 w-5" />
+                            </a>
                         </div>
                     </div>
 
@@ -57,10 +68,15 @@ export function FeaturedRestaurants() {
                             alt="Anohana"
                             className="w-full h-48 object-cover"
                         />
-                        <div className="p-4">
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">Anohana</h3>
-                            <p className="text-gray-600">Delivery Fee: 6244</p>
-                            <p className="text-yellow-500 mt-2">★★★★☆ (4,000+) - 15 min</p>
+                        <div className="p-4 flex items-center justify-between"> {/* Flex container for content and arrow */}
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-2">Anohana</h3>
+                                <p className="text-gray-600">Delivery Fee: 6244</p>
+                                <p className="text-yellow-500 mt-2">★★★★☆ (4,000+) - 15 min</p>
+                            </div>
+                            <a href="/menu" className="text-red-600 hover:text-red-800"> {/* Link to menu page */}
+                                <FaArrowRight className="h-5 w-5" />
+                            </a>
                         </div>
                     </div>
                 </div>
