@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-    MapPin,
-    Star,
-    Clock,
-    Filter,
-    Search,
-    ChevronDown
-} from 'lucide-react';
+import { MapPin, Star, Clock, Search, ChevronDown, X } from 'lucide-react';
 import res1 from '../../images/res1.jpeg';
 import res2 from '../../images/res2.jpeg';
 import res3 from '../../images/res3.jpeg';
@@ -18,10 +11,9 @@ const Restaurants = () => {
         openNow: false
     });
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState(null);
 
-    const restaurantCategories = [
-        'Chinese', 'Italian', 'Cafe', 'Fast Food', 'Bakery'
-    ];
+    const restaurantCategories = ['Chinese', 'Italian', 'Cafe', 'Fast Food', 'Bakery'];
 
     const restaurants = [
         {
@@ -34,7 +26,8 @@ const Restaurants = () => {
             image: res1,
             specialties: ['Dim Sum', 'Fried Rice', 'Noodles'],
             isOpen: true,
-            tags: ['Dine-in', 'Takeaway', 'Delivery']
+            tags: ['Dine-in', 'Takeaway', 'Delivery'],
+            deliveryTime: '25-35 min'
         },
         {
             id: 2,
@@ -46,7 +39,8 @@ const Restaurants = () => {
             image: res2,
             specialties: ['Espresso', 'Pastries', 'Sandwiches'],
             isOpen: true,
-            tags: ['Coffee', 'Breakfast', 'Brunch']
+            tags: ['Coffee', 'Breakfast', 'Brunch'],
+            deliveryTime: '15-25 min'
         },
         {
             id: 3,
@@ -58,7 +52,8 @@ const Restaurants = () => {
             image: res3,
             specialties: ['Wood Fired Pizza', 'Pasta', 'Risotto'],
             isOpen: false,
-            tags: ['Dine-in', 'Takeaway']
+            tags: ['Dine-in', 'Takeaway'],
+            deliveryTime: '30-45 min'
         },
         {
             id: 4,
@@ -67,10 +62,11 @@ const Restaurants = () => {
             rating: 4.6,
             distance: '1.8 km',
             openTime: '10:00 AM - 9:00 PM',
-            image: res1,
+            image: res1, // Reusing res1 as placeholder
             specialties: ['Healthy Bowls', 'Smoothies', 'Wraps'],
             isOpen: true,
-            tags: ['Healthy', 'Vegan Options']
+            tags: ['Healthy', 'Vegan Options'],
+            deliveryTime: '20-30 min'
         }
     ];
 
@@ -83,128 +79,186 @@ const Restaurants = () => {
         return matchesSearch && matchesCategory && matchesRating && matchesOpenStatus;
     });
 
-    const renderFilterDropdown = (label, options, currentValue, onSelect) => (
-        <div className="relative group">
-            <button className="flex items-center bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
-                {currentValue || label}
-                <ChevronDown className="ml-2 w-4 h-4 text-gray-500" />
+    const renderFilterChip = (label, value, onRemove) => (
+        <div className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm">
+            <span className="mr-2">{label}: {value}</span>
+            <button onClick={onRemove} className="text-gray-500 hover:text-gray-700">
+                <X size={14} />
             </button>
-            <div className="absolute z-10 hidden group-hover:block bg-white shadow-lg rounded-lg mt-2 w-48 border">
-                {options.map((option) => (
-                    <button
-                        key={option}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                        onClick={() => onSelect(option)}
-                    >
-                        {option}
-                    </button>
-                ))}
-                {currentValue && (
-                    <button
-                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
-                        onClick={() => onSelect(null)}
-                    >
-                        Clear
-                    </button>
-                )}
-            </div>
         </div>
     );
 
     const renderRestaurantCard = (restaurant) => (
-        <div
-            key={restaurant.id}
-            className="bg-white rounded-2xl shadow-md overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl"
-        >
-            <div className="relative">
+        <div key={restaurant.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            <div className="relative h-48">
                 <img
                     src={restaurant.image}
                     alt={restaurant.name}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-full object-cover"
                 />
-                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-white text-sm ${
-                    restaurant.isOpen ? 'bg-emerald-600' : 'bg-rose-600'
+                <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
+                    restaurant.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
                     {restaurant.isOpen ? 'Open' : 'Closed'}
                 </div>
             </div>
+
             <div className="p-4">
-                <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-bold text-gray-800">{restaurant.name}</h3>
-                    <div className="flex items-center text-amber-500">
-                        <Star className="w-5 h-5 mr-1" fill="currentColor" />
-                        <span className="font-semibold">{restaurant.rating}</span>
+                <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{restaurant.name}</h3>
+                    <div className="flex items-center bg-gray-100 px-2 py-1 rounded-full">
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 mr-1" />
+                        <span className="text-sm font-medium">{restaurant.rating}</span>
                     </div>
                 </div>
-                <div className="flex items-center text-gray-600 mb-2">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    <span>{restaurant.distance} away</span>
+
+                <div className="flex items-center text-gray-600 text-sm mb-2">
+                    <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                    <span>{restaurant.distance} • {restaurant.category}</span>
                 </div>
-                <div className="flex items-center text-gray-600 mb-3">
-                    <Clock className="w-4 h-4 mr-2" />
+
+                <div className="flex items-center text-gray-600 text-sm mb-3">
+                    <Clock className="w-4 h-4 mr-1 text-gray-400" />
                     <span>{restaurant.openTime}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-3">
+                    {restaurant.tags.map(tag => (
+                        <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                            {tag}
+                        </span>
+                    ))}
+                </div>
+
+                <div className="text-sm text-gray-500">
+                    Delivery: {restaurant.deliveryTime}
                 </div>
             </div>
         </div>
     );
 
     return (
-        <div className="bg-gray-50 min-h-screen">
-            <div className="container mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6">Discover Restaurants</h1>
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Restaurants</h1>
+                    <p className="text-gray-600">Find the best dining options near you</p>
+                </div>
 
-                {/* Advanced Filtering Section */}
-                <div className="mb-6 flex flex-wrap gap-4 items-center">
-                    {/* Search Input */}
-                    <div className="relative flex-grow">
+                {/* Search and Filters */}
+                <div className="mb-8">
+                    <div className="relative mb-4">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
                         <input
                             type="text"
-                            placeholder="Search restaurants..."
-                            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-3xl focus:outline-none focus:ring-2 focus:ring-red-200"
+                            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                            placeholder="Search for restaurants, cuisines..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <Search className="absolute left-3 top-3 text-gray-400" />
                     </div>
 
-                    {/* Category Filter */}
-                    {renderFilterDropdown(
-                        'Category',
-                        restaurantCategories,
-                        filters.category,
-                        (category) => setFilters(prev => ({ ...prev, category }))
-                    )}
-
-                    {/* Rating Filter */}
-                    {renderFilterDropdown(
-                        'Min Rating',
-                        [4.0, 4.5, 4.7],
-                        filters.minRating ? `${filters.minRating}+` : null,
-                        (rating) => setFilters(prev => ({ ...prev, minRating: rating }))
-                    )}
-
-                    {/* Open Now Toggle */}
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={filters.openNow}
-                            onChange={() => setFilters(prev => ({ ...prev, openNow: !prev.openNow }))}
-                            className="form-checkbox h-5 w-5 text-emerald-600 rounded focus:ring-emerald-500"
-                        />
-                        <span className="text-gray-700">Open Now</span>
-                    </label>
-                </div>
-
-                {/* Restaurants Grid */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredRestaurants.length > 0 ? (
-                        filteredRestaurants.map(renderRestaurantCard)
-                    ) : (
-                        <div className="col-span-full text-center text-gray-500">
-                            No restaurants found
+                    <div className="flex flex-wrap gap-3 items-center">
+                        <div className="relative">
+                            <button
+                                onClick={() => setActiveFilter(activeFilter === 'category' ? null : 'category')}
+                                className={`flex items-center px-4 py-2 rounded-full border ${filters.category ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-300 text-gray-700'} hover:bg-gray-50 transition-colors`}
+                            >
+                                {filters.category || 'Category'}
+                                <ChevronDown className={`ml-2 w-4 h-4 transition-transform ${activeFilter === 'category' ? 'transform rotate-180' : ''}`} />
+                            </button>
+                            {activeFilter === 'category' && (
+                                <div className="absolute z-10 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                                    {restaurantCategories.map(category => (
+                                        <button
+                                            key={category}
+                                            className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${filters.category === category ? 'bg-red-50 text-red-700' : ''}`}
+                                            onClick={() => {
+                                                setFilters(prev => ({ ...prev, category }));
+                                                setActiveFilter(null);
+                                            }}
+                                        >
+                                            {category}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
+
+                        <div className="relative">
+                            <button
+                                onClick={() => setActiveFilter(activeFilter === 'rating' ? null : 'rating')}
+                                className={`flex items-center px-4 py-2 rounded-full border ${filters.minRating ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-300 text-gray-700'} hover:bg-gray-50 transition-colors`}
+                            >
+                                {filters.minRating ? `${filters.minRating}+ Stars` : 'Rating'}
+                                <ChevronDown className={`ml-2 w-4 h-4 transition-transform ${activeFilter === 'rating' ? 'transform rotate-180' : ''}`} />
+                            </button>
+                            {activeFilter === 'rating' && (
+                                <div className="absolute z-10 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                                    {[4.0, 4.5, 4.7].map(rating => (
+                                        <button
+                                            key={rating}
+                                            className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${filters.minRating === rating ? 'bg-red-50 text-red-700' : ''}`}
+                                            onClick={() => {
+                                                setFilters(prev => ({ ...prev, minRating: rating }));
+                                                setActiveFilter(null);
+                                            }}
+                                        >
+                                            {rating}+ Stars
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setFilters(prev => ({ ...prev, openNow: !prev.openNow }))}
+                            className={`flex items-center px-4 py-2 rounded-full border ${filters.openNow ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-300 text-gray-700'} hover:bg-gray-50 transition-colors`}
+                        >
+                            <span className="mr-2">Open Now</span>
+                            <div className={`w-4 h-4 rounded-sm border ${filters.openNow ? 'bg-red-500 border-red-500' : 'border-gray-400'}`}>
+                                {filters.openNow && (
+                                    <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                )}
+                            </div>
+                        </button>
+                    </div>
+
+                    {/* Active filters */}
+                    <div className="flex flex-wrap gap-2 mt-4">
+                        {filters.category && renderFilterChip('Category', filters.category, () => setFilters(prev => ({ ...prev, category: null })))}
+                        {filters.minRating && renderFilterChip('Min Rating', `${filters.minRating}+`, () => setFilters(prev => ({ ...prev, minRating: null })))}
+                        {filters.openNow && renderFilterChip('Status', 'Open Now', () => setFilters(prev => ({ ...prev, openNow: false })))}
+                    </div>
                 </div>
+
+                {/* Restaurant Grid */}
+                {filteredRestaurants.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {filteredRestaurants.map(renderRestaurantCard)}
+                    </div>
+                ) : (
+                    <div className="text-center py-12">
+                        <div className="mx-auto h-24 w-24 text-gray-400 mb-4">
+                            <Search size={96} className="opacity-30" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">No restaurants found</h3>
+                        <p className="text-gray-500">Try adjusting your search or filters</p>
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setFilters({ category: null, minRating: null, openNow: false });
+                            }}
+                            className="mt-4 text-red-600 hover:text-red-700 font-medium"
+                        >
+                            Clear all filters
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -5,6 +5,7 @@ import {LoginPage} from "./pages/LoginPage";
 import {SignupPage} from "./pages/SignupPage";
 import RestaurantMenu from "./pages/RestaurantMenu";
 import RestaurantsList from "./pages/RestaurantsList";
+import CartPage from "./pages/CartPage";
 
 export default function App() {
     return (
@@ -14,6 +15,7 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/menu" element={<RestaurantMenu />} />
             <Route path="/restaurants" element={<RestaurantsList />} />
+            <Route path="/cart" element={<CartPage />} />
         </Routes>
     );
 }
