@@ -3,7 +3,7 @@ import Navbar from "../components/Utility/Navbar";
 import Menu from "../components/Restaurant/Menu";
 import Footer from "../components/Utility/Footer";
 
-export default function LandingPage() {
+export default function RestaurantMenu() {
     return (
         <div>
            <Navbar/>
