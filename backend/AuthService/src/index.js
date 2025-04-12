@@ -8,7 +8,11 @@ const app = express();
 const PORT = process.env.PORT || 5555;
 const MONGOURI = process.env.MONGOURI;
 
-app.use(cors()); // Allows cross-origin requests
+app.use(cors({
+    origin: 'http://localhost:3000', // Your frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+})); // Allows cross-origin requests
 app.use(express.json());
 
 // Import Routes
