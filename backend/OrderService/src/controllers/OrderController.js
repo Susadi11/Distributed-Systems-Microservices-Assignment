@@ -5,19 +5,12 @@ class OrderController {
     // Place a new order
     async createOrder(req, res) {
         try {
-            const {
-                customerId,
-                restaurantId,
-                items,
-                totalAmount,
-                deliveryAddress
-            } = req.body;
+            const { restaurantId, items, totalAmount, deliveryAddress } = req.body;
+            const customerId = req.user.id; // Get customer ID from authenticated user
 
             // Validate input
-            if (!customerId || !restaurantId || !items || !totalAmount || !deliveryAddress) {
-                return res.status(400).json({
-                    message: 'Missing required order details'
-                });
+            if (!restaurantId || !items || !totalAmount || !deliveryAddress) {
+                return res.status(400).json({ message: 'Missing required order details' });
             }
 
             const newOrder = new Order({
@@ -32,28 +25,16 @@ class OrderController {
 
             const savedOrder = await newOrder.save();
 
-            res.status(201).json({
-                message: 'Order created successfully',
-                order: savedOrder
-            });
+            res.status(201).json({ message: 'Order created successfully', order: savedOrder });
         } catch (error) {
-            res.status(500).json({
-                message: 'Error creating order',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Error creating order', error: error.message });
         }
     }
 
-    // Get all orders for a customer
+    // Get all orders for a customer (logged-in customer)
     async getCustomerOrders(req, res) {
         try {
-            const { customerId } = req.params;
-
-            if (!mongoose.Types.ObjectId.isValid(customerId)) {
-                return res.status(400).json({
-                    message: 'Invalid customer ID'
-                });
-            }
+            const customerId = req.user.id; // Get customer ID from authenticated user
 
             const orders = await Order.find({ customerId })
                 .populate('restaurantId')
@@ -62,10 +43,7 @@ class OrderController {
 
             res.status(200).json(orders);
         } catch (error) {
-            res.status(500).json({
-                message: 'Error fetching customer orders',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Error fetching customer orders', error: error.message });
         }
     }
 
@@ -75,9 +53,7 @@ class OrderController {
             const { restaurantId } = req.params;
 
             if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
-                return res.status(400).json({
-                    message: 'Invalid restaurant ID'
-                });
+                return res.status(400).json({ message: 'Invalid restaurant ID' });
             }
 
             const orders = await Order.find({ restaurantId })
@@ -87,10 +63,7 @@ class OrderController {
 
             res.status(200).json(orders);
         } catch (error) {
-            res.status(500).json({
-                message: 'Error fetching restaurant orders',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Error fetching restaurant orders', error: error.message });
         }
     }
 
@@ -106,28 +79,17 @@ class OrderController {
 
             const updatedOrder = await Order.findByIdAndUpdate(
                 orderId,
-                {
-                    ...updateData,
-                    updatedAt: Date.now()
-                },
+                { ...updateData, updatedAt: Date.now() },
                 { new: true }
             );
 
             if (!updatedOrder) {
-                return res.status(404).json({
-                    message: 'Order not found'
-                });
+                return res.status(404).json({ message: 'Order not found' });
             }
 
-            res.status(200).json({
-                message: 'Order updated successfully',
-                order: updatedOrder
-            });
+            res.status(200).json({ message: 'Order updated successfully', order: updatedOrder });
         } catch (error) {
-            res.status(500).json({
-                message: 'Error updating order',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Error updating order', error: error.message });
         }
     }
 
@@ -137,9 +99,7 @@ class OrderController {
             const { orderId } = req.params;
             const { orderStatus, paymentStatus } = req.body;
 
-            const updateData = {
-                updatedAt: Date.now()
-            };
+            const updateData = { updatedAt: Date.now() };
 
             if (orderStatus) {
                 updateData.orderStatus = orderStatus;
@@ -156,48 +116,30 @@ class OrderController {
             );
 
             if (!updatedOrder) {
-                return res.status(404).json({
-                    message: 'Order not found'
-                });
+                return res.status(404).json({ message: 'Order not found' });
             }
 
-            res.status(200).json({
-                message: 'Order status updated successfully',
-                order: updatedOrder
-            });
+            res.status(200).json({ message: 'Order status updated successfully', order: updatedOrder });
         } catch (error) {
-            res.status(500).json({
-                message: 'Error updating order status',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Error updating order status', error: error.message });
         }
     }
 
-    // View order history
+    // View order history (logged-in customer)
     async getOrderHistory(req, res) {
         try {
-            const { customerId } = req.params;
+            const customerId = req.user.id; // Get customer ID from authenticated user
 
-            if (!mongoose.Types.ObjectId.isValid(customerId)) {
-                return res.status(400).json({
-                    message: 'Invalid customer ID'
-                });
-            }
-
-            const orders = await Order.find({
-                customerId,
-                orderStatus: 'Completed'
-            })
+            const orders = await Order.find({ customerId, orderStatus: 'Completed' })
                 .populate('restaurantId')
                 .populate('items.foodItemId')
                 .sort({ createdAt: -1 });
 
             res.status(200).json(orders);
         } catch (error) {
-            res.status(500).json({
-                message: 'Error fetching order history',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Error fetching order history', error: error.message });
         }
     }
 }
+
+module.exports = OrderController;
