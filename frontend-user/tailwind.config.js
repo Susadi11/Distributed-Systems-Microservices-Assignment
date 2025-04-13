@@ -9,6 +9,9 @@ module.exports = {
         'dark-red': '#c3362b',
         'red-hover': '#c94a40',
       },
+      fontFamily: {
+        inter: ['Inter', 'sans-serif'],
+      },
     },
   },
   plugins: [],

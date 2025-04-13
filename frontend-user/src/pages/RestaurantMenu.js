@@ -6,7 +6,6 @@ import Footer from "../components/Utility/Footer";
 export default function RestaurantMenu() {
     return (
         <div>
-           <Navbar/>
             <Menu/>
             <Footer/>
         </div>

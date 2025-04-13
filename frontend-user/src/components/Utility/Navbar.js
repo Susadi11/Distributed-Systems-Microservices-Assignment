@@ -5,6 +5,32 @@ import { FaShoppingCart, FaUser } from 'react-icons/fa';
 import { IoRestaurant } from 'react-icons/io5';
 import { MdDeliveryDining, MdHome } from 'react-icons/md';
 
+// Reusable NavLink for desktop
+function NavLink({ to, icon, text }) {
+    return (
+        <Link
+            to={to}
+            className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600 transition-colors duration-200"
+        >
+            {icon}
+            {text}
+        </Link>
+    );
+}
+
+// Reusable MobileNavLink for mobile menu
+function MobileNavLink({ to, icon, text }) {
+    return (
+        <Link
+            to={to}
+            className="flex items-center w-full px-3 py-2 text-base font-medium text-gray-700 hover:text-red-600 transition-colors duration-200"
+        >
+            {icon}
+            {text}
+        </Link>
+    );
+}
+
 export default function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
@@ -27,7 +53,7 @@ export default function Navbar() {
     }, [location]);
 
     return (
-        <header className={`fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-7xl z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-white'} rounded-full border border-gray-100`}>
+        <header className={`fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-7xl z-50 transition-all duration-300 ${scrolled ? 'bg-white opacity-80 backdrop-blur-md shadow-lg' : 'bg-white'} rounded-full border border-gray-100`}>
             <nav className="mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo */}
@@ -118,33 +144,3 @@ export default function Navbar() {
         </header>
     );
 }
-
-// Reusable component for desktop nav links
-const NavLink = ({ to, icon, text }) => (
-    <Link
-        to={to}
-        className="flex items-center px-4 py-2 text-sm font-medium rounded-full group transition-colors duration-200 hover:bg-gray-100"
-    >
-        <span className="text-gray-500 group-hover:text-red-600 transition-colors duration-200">
-            {icon}
-        </span>
-        <span className="ml-1 text-gray-700 group-hover:text-red-600 transition-colors duration-200">
-            {text}
-        </span>
-    </Link>
-);
-
-// Reusable component for mobile nav links
-const MobileNavLink = ({ to, icon, text }) => (
-    <Link
-        to={to}
-        className="flex items-center px-4 py-3 text-base font-medium rounded-lg hover:bg-gray-50 hover:text-red-600 text-gray-700 transition-colors duration-200"
-    >
-        <span className="text-gray-500">
-            {icon}
-        </span>
-        <span className="ml-3">
-            {text}
-        </span>
-    </Link>
-);
