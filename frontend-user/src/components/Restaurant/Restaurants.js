@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { MapPin, Star, Clock, Search, ChevronDown, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import res1 from '../../images/res1.jpeg';
 import res2 from '../../images/res2.jpeg';
 import res3 from '../../images/res3.jpeg';
 
 const Restaurants = () => {
+    const navigate = useNavigate();
     const [filters, setFilters] = useState({
         category: null,
         minRating: null,
@@ -88,8 +90,16 @@ const Restaurants = () => {
         </div>
     );
 
+    const handleRestaurantClick = (restaurantId) => {
+        navigate(`/menu`);
+    };
+
     const renderRestaurantCard = (restaurant) => (
-        <div key={restaurant.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+        <div
+            key={restaurant.id}
+            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+            onClick={() => handleRestaurantClick(restaurant.id)}
+        >
             <div className="relative h-48">
                 <img
                     src={restaurant.image}
