@@ -219,9 +219,11 @@ const MyCart = () => {
                             </p>
                         </div>
 
-                        <button className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md mt-6 transition-colors">
-                            Proceed to Checkout
-                        </button>
+                        <Link to="/checkout">
+                            <button className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md mt-6 transition-colors">
+                                Proceed to Checkout
+                            </button>
+                        </Link>
                     </div>
                 </div>
             </div>

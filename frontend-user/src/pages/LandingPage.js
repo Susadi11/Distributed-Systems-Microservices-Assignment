@@ -6,16 +6,17 @@ import {FeaturedRestaurants} from "../components/Home/FeaturedRestaurants";
 import {HowItWorks} from "../components/Home/HowItWorks";
 import {MapSection} from "../components/Home/MapSection";
 import FoodCategoriesCarousel from "../components/Home/FoodCategoriesCarousel";
+import {OffersSection} from "../components/Home/OfferSection";
 
 export default function LandingPage() {
     return (
         <div>
             <Navbar />
             <HeroSection />
-            <FoodCategoriesCarousel/>
-            <MapSection />
+            <OffersSection/>
             <FeaturedRestaurants />
             <HowItWorks />
+            <MapSection />
             <Footer/>
         </div>
     );
