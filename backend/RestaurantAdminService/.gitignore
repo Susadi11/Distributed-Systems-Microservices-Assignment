@@ -1,0 +1,17 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# Cache and build files
+dist/
+build/
+.cache/
+
+# Misc
+.DS_Store
