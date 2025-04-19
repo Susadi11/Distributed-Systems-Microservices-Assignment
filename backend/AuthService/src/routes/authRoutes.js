@@ -102,10 +102,10 @@ router.post("/register", async (req, res) => {
   
     } catch (error) {
       console.error("Login Error:", error);
-      res.status(500).json({ 
-        error: "Server error",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
+  res.status(500).json({ 
+    error: "Server error",
+    details: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
     }
   });
 // Add this to your authRoutes.js
