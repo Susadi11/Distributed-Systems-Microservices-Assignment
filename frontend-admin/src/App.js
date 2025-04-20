@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminDashboard from './pages/AdminDashboard';
 import RestaurantVerification from './pages/RestaurantVerification';
 import UserManagement from './pages/UserManagement';
+import Analytics from './pages/Analytics';
 import Home from './Home';
 
 function App() {
@@ -19,7 +20,7 @@ function App() {
         <Route path="verify-restaurants" element={<RestaurantVerification />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="transactions" element={<div>Transactions</div>} />
-        <Route path="analytics" element={<div>Analytics</div>} />
+        <Route path="analytics" element={<Analytics />} />
         <Route path="account" element={<div>Account Settings</div>} />
       </Route>
 
