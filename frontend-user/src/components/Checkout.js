@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Check, Gift, MapPin, Clock, ChevronDown, Info, ChevronRight } from 'lucide-react';
+import { Check, Gift, MapPin, Clock, ChevronDown, Info, ChevronRight, CreditCard } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { useNavigate } from 'react-router-dom';
 
 // Fix for default marker icons in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -17,6 +18,9 @@ const Checkout = () => {
     const [useUberOne, setUseUberOne] = useState(false);
     const [usePromotion, setUsePromotion] = useState(true);
     const [instructions, setInstructions] = useState('');
+    const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
+    const navigate = useNavigate();
 
     const orderSummary = {
         items: [
@@ -167,7 +171,7 @@ const Checkout = () => {
                                 <p className="text-sm text-gray-600">{orderSummary.items[0].quantity} item</p>
                             </div>
                             <button className="text-red-600 text-sm font-medium flex items-center">
-                                <Gift className="w-4 h-4 mr-1" /> Send as gift
+                                <Gift className="w-4 h-4 mr-1"/> Send as gift
                             </button>
                         </div>
 
@@ -205,7 +209,7 @@ const Checkout = () => {
                                         Save LKR {orderSummary.uberOneSavings.toFixed(2)} with Uber One
                                     </label>
                                 </div>
-                                <Info className="w-4 h-4 text-gray-400" />
+                                <Info className="w-4 h-4 text-gray-400"/>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div className="flex items-center">
@@ -220,7 +224,7 @@ const Checkout = () => {
                                         Saving LKR {orderSummary.promotion.toFixed(2)} with promotions
                                     </label>
                                 </div>
-                                <Info className="w-4 h-4 text-gray-400" />
+                                <Info className="w-4 h-4 text-gray-400"/>
                             </div>
                         </div>
 
@@ -237,8 +241,75 @@ const Checkout = () => {
                             </div>
                         </div>
 
+                        {/* Payment Method Section */}
+                        <div className="mb-6 border-t border-gray-200 pt-4">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Payment method</h3>
+
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => setShowPaymentMethods(!showPaymentMethods)}
+                                    className="w-full flex justify-between items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                                >
+                                    <div className="flex items-center">
+                                        {selectedPaymentMethod === 'cash' ? (
+                                            <div
+                                                className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                                                <Check className="w-4 h-4 text-red-600"/>
+                                            </div>
+                                        ) : (
+                                            <CreditCard className="w-6 h-6 text-gray-500 mr-3"/>
+                                        )}
+                                        <span className="font-medium">
+                                    {selectedPaymentMethod === 'cash' ? 'Cash' : 'Credit/Debit Card'}
+                                </span>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-gray-400"/>
+                                </button>
+
+                                {showPaymentMethods && (
+                                    <div className="space-y-2 mt-2">
+                                        <button
+                                            onClick={() => {
+                                                setSelectedPaymentMethod('cash');
+                                                setShowPaymentMethods(false);
+                                            }}
+                                            className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'cash' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                                        >
+                                            {selectedPaymentMethod === 'cash' && (
+                                                <div
+                                                    className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                                                    <Check className="w-3 h-3 text-white"/>
+                                                </div>
+                                            )}
+                                            <span>Cash</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                // Navigate to SelectPayment page for card selection
+                                                window.location.href = '/select-payment';
+                                            }}
+                                            className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'card' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                                        >
+                                            {selectedPaymentMethod === 'card' && (
+                                                <div
+                                                    className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                                                    <Check className="w-3 h-3 text-white"/>
+                                                </div>
+                                            )}
+                                            <span>Credit/Debit Card</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+
                         {/* Place Order Button */}
-                        <button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-sm transition-colors">
+                        <button
+                            onClick={() => navigate('/pending')}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-sm transition-colors"
+                        >
                             Place order
                         </button>
                     </div>
