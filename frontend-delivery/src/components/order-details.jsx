@@ -9,10 +9,10 @@ import { cn } from "../lib/utils.js"
 
 export function OrderDetails({ order, onUpdateStatus }) {
   const statusColors = {
-    Assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-    "Picked Up": "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-    Delivered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-    Cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+    Assigned: "bg-blue-100 text-blue-700 font-semibold",
+    "Picked Up": "bg-yellow-100 text-yellow-700 font-semibold",
+    Delivered: "bg-green-100 text-green-700 font-semibold",
+    Cancelled: "bg-red-100 text-red-700 font-semibold",
   }
 
   const getNextAction = () => {

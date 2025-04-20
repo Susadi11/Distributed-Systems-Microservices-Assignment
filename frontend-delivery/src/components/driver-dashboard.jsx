@@ -3,10 +3,9 @@
 import { useState } from "react"
 import { Bell, ChevronDown, ClipboardList, Home, LogOut, Menu, MessageSquare, Settings, User } from "lucide-react"
 import { OrderCard } from "../components/order-card.jsx"
-import { Button } from "../components/ui/button.jsx"    
+import { Button } from "../components/ui/button.jsx"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar.jsx"
 import { Badge } from "../components/ui/badge.jsx"
-import { cn } from "../lib/utils.js"
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet.jsx"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs.jsx"
 import {

@@ -1,56 +1,47 @@
-"use client"
-
-import { Clock, MapPin } from "lucide-react"
-import { Badge } from "../components/ui/badge"
 import { Card, CardContent } from "../components/ui/card"
-import { cn } from "../lib/utils.js"
+import { cn } from "../lib/utils"
 
 export function OrderCard({ order, isSelected, onSelect }) {
   const statusColors = {
-    Assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-    "Picked Up": "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-    Delivered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-    Cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+    Assigned: "bg-blue-100 text-blue-800",
+    "Picked Up": "bg-yellow-100 text-yellow-800",
+    Delivered: "bg-green-100 text-green-800",
+    Cancelled: "bg-red-100 text-red-800",
   }
 
   return (
     <Card
-      className={cn("cursor-pointer transition-colors hover:bg-muted/50", isSelected && "border-primary bg-muted/50")}
       onClick={onSelect}
+      className={cn(
+        "cursor-pointer transition-colors hover:bg-muted/50",
+        isSelected ? "border-2 border-black bg-muted" : "border border-gray-200"
+      )}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 space-y-4">
         <div className="flex justify-between">
           <div>
-            <h3 className="font-medium">Order #{order.orderNumber}</h3>
-            <p className="text-sm text-muted-foreground">{order.restaurant}</p>
+            <h3 className="font-semibold">Order #{order.orderNumber}</h3>
+            <p className="text-sm text-gray-500">{order.restaurant}</p>
           </div>
-          <Badge className={cn("ml-auto", statusColors[order.status])}>{order.status}</Badge>
+          <span className={cn("rounded-full inline-flex items-center justify-center px-3 py-1 text-sm font-medium", statusColors[order.status])}>
+            {order.status}
+          </span>
         </div>
 
-        <div className="mt-4 space-y-2">
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Pickup</p>
-              <p className="text-xs text-muted-foreground">{order.pickupAddress}</p>
-            </div>
+        <div className="space-y-2">
+          <div className="text-sm">
+            <p className="font-medium">Pickup</p>
+            <p className="text-xs text-gray-500">{order.pickupAddress}</p>
           </div>
-
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Delivery</p>
-              <p className="text-xs text-muted-foreground">{order.deliveryAddress}</p>
-            </div>
+          <div className="text-sm">
+            <p className="font-medium">Delivery</p>
+            <p className="text-xs text-gray-500">{order.deliveryAddress}</p>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{order.estimatedDeliveryTime}</span>
-          </div>
-          <p className="text-sm font-medium">${order.totalAmount.toFixed(2)}</p>
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>{order.estimatedDeliveryTime}</span>
+          <span className="font-semibold">${order.totalAmount.toFixed(2)}</span>
         </div>
       </CardContent>
     </Card>
