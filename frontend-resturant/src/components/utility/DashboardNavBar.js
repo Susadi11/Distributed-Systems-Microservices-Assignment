@@ -1,7 +1,12 @@
 import React from "react";
 import { BellIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
 
 function DashboardNavBar() {
+  const navigate = useNavigate();
+  const handleClick = () => {
+    navigate("/profile"); 
+  }// Navigate to the home page when the logo is clicked
   return (
     <nav className="bg-white border-b border-gray-200 dark:bg-gray-900 px-4 py-3">
       <div className="max-w-screen-xl mx-auto flex items-center justify-between">
@@ -66,7 +71,9 @@ function DashboardNavBar() {
           </button>
 
           {/* Profile icon */}
-          <button className="text-gray-500 dark:text-gray-300 hover:text-blue-600">
+          <button 
+          onClick={handleClick}
+          className="text-gray-500 dark:text-gray-300 hover:text-blue-600">
             <UserCircleIcon className="w-8 h-8" />
           </button>
         </div>
