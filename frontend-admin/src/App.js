@@ -1,11 +1,33 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Home from "./Home";
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import AdminDashboard from './pages/AdminDashboard';
+import RestaurantVerification from './pages/RestaurantVerification';
+import UserManagement from './pages/UserManagement';
+import Analytics from './pages/Analytics';
+import Home from './Home';
 
-export default function App() {
+function App() {
   return (
-      <Routes>
-        <Route path="/" element={<Home />} />
-      </Routes>
+    <Routes>
+      {/* Redirect root path to /admin/dashboard */}
+      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+
+      {/* Admin dashboard routes with layout wrapper */}
+      <Route path="/admin" element={<AdminDashboard />}>
+        {/* Default admin route */}
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Home />} />
+        <Route path="verify-restaurants" element={<RestaurantVerification />} />
+        <Route path="users" element={<UserManagement />} />
+        <Route path="transactions" element={<div>Transactions</div>} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="account" element={<div>Account Settings</div>} />
+      </Route>
+
+      {/* Catch-all route */}
+      <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+    </Routes>
   );
 }
+
+export default App;

@@ -1,5 +1,5 @@
-// src/components/Profile.js
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     User,
     Bell,
@@ -18,7 +18,10 @@ import {
     MapPin,
     Clock
 } from 'lucide-react';
-import defaultAvatar from '../images/prof.png'; // Make sure to add this image to your project
+import defaultAvatar from '../images/prof.png';
+import OrdersPage from "../pages/OrdersPage";
+import Privacy from "./Privacy";
+import HelpCenter from "./HelpCenter"; // Make sure to add this image to your project
 
 const Profile = () => {
     const [userData, setUserData] = useState({
@@ -31,6 +34,7 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedData, setEditedData] = useState({...userData});
     const [activeMenuItem, setActiveMenuItem] = useState('profile');
+    const navigate = useNavigate();
 
     const notifications = [
         {
@@ -247,13 +251,10 @@ const Profile = () => {
                         )}
                     </div>
                 );
-            case 'orders':
-                return (
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
-                        <h2 className="text-lg font-medium mb-4">My Orders</h2>
-                        <p className="text-gray-600">View your order history here</p>
-                    </div>
-                );
+            case 'privacy':
+                return <Privacy />;
+            case 'help':
+                return <HelpCenter />;
             default:
                 return (
                     <div className="bg-white rounded-xl p-6 shadow-sm">
@@ -265,7 +266,7 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-16 mt-20">
+        <div className="min-h-screen bg-white pb-16 mt-20">
             <div className="max-w-6xl mx-auto px-4 py-6">
                 <h1 className="text-2xl font-bold mb-6">Account</h1>
 
