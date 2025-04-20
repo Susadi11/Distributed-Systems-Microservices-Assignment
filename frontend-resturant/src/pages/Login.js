@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -13,6 +14,7 @@ const Login = () => {
   });
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -49,11 +51,29 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await login(formData.email, formData.password);
+      const user = await login(formData.email, formData.password);
+      // Redirect based on user role
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
+      console.error('Login error:', error);
+      let errorMessage = 'Login failed. Please try again.';
+      
+      // Check for specific error messages
+      if (error.message.includes('pending approval')) {
+        errorMessage = 'Your account is pending approval. Please wait for admin confirmation.';
+      } else if (error.message.includes('not found')) {
+        errorMessage = 'Email or password is incorrect.';
+      } else if (error.message.includes('rejected')) {
+        errorMessage = 'Your account application has been rejected. Please contact support.';
+      }
+      
       setErrors({
         ...errors,
-        form: error.response?.data?.error || 'Login failed. Please try again.'
+        form: errorMessage
       });
     } finally {
       setLoading(false);

@@ -1,6 +1,6 @@
 import React from 'react';
 import DashboardNavBar from '../components/utility/DashboardNavBar';
-import { Home, LayoutDashboard, Users, Mail, Settings, ShoppingCart, CheckCircle, Clock } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Clock } from 'lucide-react';
 import Sidebar from '../components/utility/Sidebar';
 
 function Dashboard() {
@@ -77,7 +77,7 @@ function Dashboard() {
                                     <tr>
                                         <th scope="col" className="px-6 py-3">Order ID</th>
                                         <th scope="col" className="px-6 py-3">Customer Name</th>
-                                        <th scope="col" className="px-6 py-3">Table No.</th>
+                                        <th scope="col" className="px-6 py-3">Item category</th>
                                         <th scope="col" className="px-6 py-3">Order Items</th>
                                         <th scope="col" className="px-6 py-3">Order Status</th>
                                         <th scope="col" className="px-6 py-3">Total</th>
