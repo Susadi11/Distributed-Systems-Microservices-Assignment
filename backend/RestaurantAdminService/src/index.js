@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const productRoutes = require('./routes/productRoutes');
+const restaurantRoutes = require('./routes/restaurantRoutes');
 const path = require('path');
 const connectDB = require('./db');
 
@@ -18,10 +19,13 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/public/restaurant', express.static(path.join(__dirname, 'public/restaurant')));
 
 
 // Routes
 app.use('/api/products', productRoutes);
+app.use('/api/restaurants', restaurantRoutes);
+
 
 // Error handling
 app.use((err, req, res, next) => {

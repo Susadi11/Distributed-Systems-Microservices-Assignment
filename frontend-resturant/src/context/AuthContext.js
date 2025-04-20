@@ -1,99 +1,136 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate from react-router-dom
-
-import api from '../api/Axios'; // Adjust the import path as necessary
+import { useNavigate } from 'react-router-dom';
+import api from '../api/Axios'; // Keep your existing API setup
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-
-
-const AuthContext = createContext();
+// Create context with default values
+const AuthContext = createContext({
+  user: null,
+  login: () => {},
+  logout: () => {},
+  register: () => {},
+  isAuthenticated: false,
+  isLoading: true,
+  authError: null
+});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); // Import useNavigate from react-router-dom
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
+  const navigate = useNavigate();
+  
+  // Check if user is already logged in on page load
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const { data } = await axios.get('/auth/me');
+          // Set token for all future requests
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Verify token with backend
+          const { data } = await api.get('/auth/me');
           setUser(data.user);
         }
       } catch (error) {
-        logout();
+        console.error('Auth verification error:', error);
+        logout(); // Clear invalid auth state
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
+    
     checkAuth();
   }, []);
-  
+
   const login = async (email, password) => {
+    setAuthError(null);
+    setIsLoading(true);
+    
     try {
       const { data } = await api.post('/auth/login', { email, password });
-  
-      localStorage.setItem('token', data.token);
+      
+      // Check if user status is approved (if your API implements status checks)
+      if (data.user.status && data.user.status !== 'approved') {
+        throw new Error('Your account is pending approval. Please wait for admin approval.');
+      }
+      
+      // Save token to localStorage
+      localStorage.setItem('authToken', data.token);
+      
+      // Set authorization header for future requests
       api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+      
+      // Set user state
       setUser(data.user);
-  
+      
+      // Show success message
+      toast.success('Logged in successfully');
+      
       // Redirect based on role
       navigate(data.user.role === 'resturant_admin' ? '/dashboard' : '/');
+      
+      return data.user;
     } catch (error) {
-      console.log("Login error:", error); // 🧪 for debugging
-      const errorMessage = error.response?.data?.error || "Login failed";
-      toast.error(errorMessage, { autoClose: 8000 }); // 👈 this must be visible
-      // DO NOT navigate here. Let the user stay on login page.
+      const errorMessage = error.response?.data?.error || error.message || "Login failed";
+      setAuthError(errorMessage);
+      toast.error(errorMessage, { autoClose: 8000 });
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
   
-  
-  
+  const register = async (userData) => {
+    setAuthError(null);
+    setIsLoading(true);
+    
+    try {
+      const { data } = await api.post('/auth/register', userData);
+      
+      // Check for successful response structure
+      if (data.token && data.user) {
+        localStorage.setItem('authToken', data.token);
+        api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        setUser(data.user);
+        toast.success(data.message || 'Registered successfully');
+        navigate('/');
+      } else {
+        throw new Error('Unexpected response format');
+      }
+      
+      return data.user;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || "Registration failed";
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem('authToken');
+    delete api.defaults.headers.common['Authorization'];
     setUser(null);
     toast.success('Logged out successfully');
-    window.location.href = '/'; // ✅ safe redirect
+    navigate('/');
   };
   
+  const value = {
+    user,
+    login,
+    logout,
+    register,
+    isAuthenticated: !!user,
+    isLoading,
+    authError
+  };
   
-
-// In your AuthContext.js
-const register = async (userData) => {
-  try {
-    const { data } = await api.post('/auth/register', userData);
-    
-    // Check for successful response structure
-    if (data.token && data.user) {
-      localStorage.setItem('token', data.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-      setUser(data.user);
-      toast.success(data.message || 'Registered successfully');
-     
-window.location.href = '/';
-
-    } else {
-      throw new Error('Unexpected response format');
-    }
-  } catch (err) {
-    const errorMessage = err.response?.data?.error || "Login failed";
-    toast.error(errorMessage);
-  }
-  
-};
-  // Duplicate logout function removed
-
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);

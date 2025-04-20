@@ -12,6 +12,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import MenuCatalog from "./pages/MenuCatalog";
 import MenuList from "./pages/MenuList";
 import AddProduct from "./pages/AddProduct";
+import Registration from "./pages/Registration";
+import Profile from "./pages/Profile";
 
 
 export default function App() {
@@ -22,6 +24,7 @@ export default function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Registration/>} />
         <Route
           path="/dashboard"
           element={
@@ -52,6 +55,14 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={['resturant_admin']}>
               <AddProduct />
+            </PrivateRoute>
+          }
+        />
+         <Route
+          path="/profile"
+          element={
+            <PrivateRoute allowedRoles={['resturant_admin']}>
+              <Profile />
             </PrivateRoute>
           }
         />
