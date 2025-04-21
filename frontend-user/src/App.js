@@ -11,6 +11,7 @@ import OrdersPage from "./pages/OrdersPage";
 import ProfilePage from "./pages/ProfilePage";
 import PendingPage from "./pages/PendingPage";
 import SelectPayment from "./pages/SelectPayment";
+import StripePayment from "./pages/StripePayment";
 
 export default function App() {
     return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/pending" element={<PendingPage />} />
             <Route path="/select-payment" element={<SelectPayment />} />
+            <Route path="/stripe" element={<StripePayment />} />
         </Routes>
     );
 }

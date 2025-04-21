@@ -37,6 +37,7 @@ export default function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const [userData, setUserData] = useState(null);
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
@@ -46,6 +47,18 @@ export default function Navbar() {
     useEffect(() => {
         const token = localStorage.getItem('authToken');
         setIsLoggedIn(!!token);
+
+        if (token) {
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                setUserData(user);
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                setUserData(null);
+            }
+        } else {
+            setUserData(null);
+        }
     }, [location]);
 
     const handleLogout = () => {
@@ -106,13 +119,16 @@ export default function Navbar() {
 
                         {isLoggedIn ? (
                             <>
-                                <Link
-                                    to="/profile"
-                                    className="p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-                                    aria-label="User Profile"
-                                >
-                                    <FaUserCircle className="h-5 w-5" />
-                                </Link>
+                                <div className="flex items-center">
+                                    <Link
+                                        to="/profile"
+                                        className="p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors duration-200 flex items-center"
+                                        aria-label="User Profile"
+                                    >
+                                        <FaUserCircle className="h-5 w-5 mr-1" />
+                                        <span className="text-sm font-medium">{userData?.name || 'Profile'}</span>
+                                    </Link>
+                                </div>
                                 <button
                                     onClick={handleLogout}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 transition-colors duration-200 rounded-full flex items-center"
@@ -168,7 +184,11 @@ export default function Navbar() {
                     <div className="pt-4 border-t border-gray-100 mt-2">
                         {isLoggedIn ? (
                             <>
-                                <MobileNavLink to="/profile" icon={<FaUserCircle className="mr-2" />} text="Profile" />
+                                <MobileNavLink
+                                    to="/profile"
+                                    icon={<FaUserCircle className="mr-2" />}
+                                    text={userData?.name || 'Profile'}
+                                />
                                 <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-red-600 transition-colors duration-200"
