@@ -4,6 +4,7 @@ import { FiMenu, FiX, FiLogOut } from 'react-icons/fi';
 import { FaShoppingCart, FaUser, FaUserCircle } from 'react-icons/fa';
 import { IoRestaurant } from 'react-icons/io5';
 import { MdDeliveryDining, MdHome } from 'react-icons/md';
+import { useAuth } from '../../AuthContext';
 
 // Reusable NavLink for desktop
 function NavLink({ to, icon, text }) {
@@ -34,37 +35,18 @@ function MobileNavLink({ to, icon, text }) {
 export default function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
-    const [userData, setUserData] = useState(null);
+
+    // Use the auth context instead of local state
+    const { user, logout } = useAuth();
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
     };
 
-    // Check authentication status
-    useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        setIsLoggedIn(!!token);
-
-        if (token) {
-            try {
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
-                setUserData(user);
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                setUserData(null);
-            }
-        } else {
-            setUserData(null);
-        }
-    }, [location]);
-
     const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        setIsLoggedIn(false);
+        logout(); // Use the logout function from context
         navigate('/');
         setMobileMenuOpen(false);
     };
@@ -117,7 +99,7 @@ export default function Navbar() {
                             </span>
                         </Link>
 
-                        {isLoggedIn ? (
+                        {user ? (
                             <>
                                 <div className="flex items-center">
                                     <Link
@@ -126,7 +108,7 @@ export default function Navbar() {
                                         aria-label="User Profile"
                                     >
                                         <FaUserCircle className="h-5 w-5 mr-1" />
-                                        <span className="text-sm font-medium">{userData?.name || 'Profile'}</span>
+                                        <span className="text-sm font-medium">{user.name || 'Profile'}</span>
                                     </Link>
                                 </div>
                                 <button
@@ -182,12 +164,12 @@ export default function Navbar() {
                     <MobileNavLink to="/cart" icon={<FaShoppingCart className="mr-2" />} text="Cart" />
 
                     <div className="pt-4 border-t border-gray-100 mt-2">
-                        {isLoggedIn ? (
+                        {user ? (
                             <>
                                 <MobileNavLink
                                     to="/profile"
                                     icon={<FaUserCircle className="mr-2" />}
-                                    text={userData?.name || 'Profile'}
+                                    text={user.name || 'Profile'}
                                 />
                                 <button
                                     onClick={handleLogout}

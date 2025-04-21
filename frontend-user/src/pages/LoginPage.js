@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import loginImage from '../images/login.jpeg';
 
 export function LoginPage() {
@@ -12,6 +12,11 @@ export function LoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
+
+    // Get the return URL from location state or default to home
+    const from = location.state?.from?.pathname || '/';
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -32,14 +37,7 @@ export function LoginPage() {
 
         try {
             setLoading(true);
-            const response = await axios.post('http://localhost:5555/auth/login', {
-                email: formData.email,
-                password: formData.password
-            });
-
-            // Save token and user data (note the updated structure to match backend)
-            localStorage.setItem('authToken', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            await login(formData.email, formData.password);
 
             // Remember email if checked
             if (formData.rememberMe) {
@@ -48,7 +46,8 @@ export function LoginPage() {
                 localStorage.removeItem('rememberedEmail');
             }
 
-            navigate('/');
+            // Navigate to the page the user was trying to access, or home
+            navigate(from, { replace: true });
 
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
@@ -57,7 +56,7 @@ export function LoginPage() {
         }
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
         const rememberedEmail = localStorage.getItem('rememberedEmail');
         if (rememberedEmail) {
             setFormData(prev => ({

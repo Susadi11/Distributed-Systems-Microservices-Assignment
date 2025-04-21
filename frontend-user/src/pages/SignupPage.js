@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios'; // Make sure to install axios
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 import signupImage from '../images/signup.jpeg';
 
 export function SignupPage() {
@@ -13,6 +14,8 @@ export function SignupPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+    const { register } = useAuth();
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -45,22 +48,19 @@ export function SignupPage() {
 
         try {
             setLoading(true);
-            // Send registration request to your backend
-            const response = await axios.post('http://localhost:5555/auth/register', {
-                name: formData.name, // Using name as username for backend
+            // Use the register function from auth context
+            await register({
+                name: formData.name,
                 email: formData.email,
                 password: formData.password,
-                role: 'customer' // Setting role explicitly to customer
+                role: 'customer'
             });
 
             setSuccess('Account created successfully! Redirecting...');
 
-            // Save the token to localStorage
-            localStorage.setItem('token', response.data.token);
-
             // Redirect after successful signup
             setTimeout(() => {
-                window.location.href = '/login'; // Or wherever you want to redirect
+                navigate('/login');
             }, 2000);
 
         } catch (err) {
@@ -75,7 +75,7 @@ export function SignupPage() {
             {/* Left side - full height image */}
             <div className="md:w-1/2 relative">
                 <img
-                    src={signupImage} // Placeholder image
+                    src={signupImage}
                     alt="Signup illustration"
                     className="absolute inset-0 w-full h-full object-cover"
                 />
