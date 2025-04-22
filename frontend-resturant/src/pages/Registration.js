@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Registration = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState
- ({
-
+  const [formData, setFormData] = useState({
     storeName: '',
     brandName: '',
     businessType: '',
@@ -19,16 +17,66 @@ const Registration = () => {
     state: '',
     postalCode: '',
     email: '',
-    password: '',            
-    confirmPassword: '',
+    // password: '',            
+    // confirmPassword: '',
     termsAccepted: false
   });
 
+  const [userId, setUserId] = useState(null);
   const [countryCode, setCountryCode] = useState('+94');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const token = localStorage.getItem('authToken');
+
+  // Function to decode JWT token
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('Error parsing JWT token:', e);
+      return null;
+    }
+  };
+
+  // Get user ID from token when component mounts
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = parseJwt(token);
+        console.log('Decoded token:', decoded);
+
+        // Extract user ID from token
+        const extractedUserId = decoded.id || decoded.userId || decoded._id || decoded.sub;
+        console.log('Extracted user ID:', extractedUserId);
+
+        if (extractedUserId) {
+          setUserId(extractedUserId);
+        } else {
+          console.error('No user ID found in token');
+        }
+
+        // Pre-fill email if available in token
+        if (decoded.email) {
+          setFormData(prev => ({
+            ...prev,
+            email: decoded.email
+          }));
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, [token]);
 
   const businessTypes = [
     'Restaurant',
@@ -50,37 +98,46 @@ const Registration = () => {
     setIsSubmitting(true);
     setError(null);
   
-    // Password validation
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    // Validate user is authenticated
+    if (!userId) {
+      setError("Authentication required. Please log in first.");
       setIsSubmitting(false);
       return;
     }
+
+    // // Password validation
+    // if (formData.password !== formData.confirmPassword) {
+    //   setError("Passwords do not match");
+    //   setIsSubmitting(false);
+    //   return;
+    // }
   
     try {
       const payload = {
         storeName: formData.storeName,
         brandName: formData.brandName,
         businessType: formData.businessType,
-        streetAddress: formData.storeAddress, // Changed to match backend
+        streetAddress: formData.storeAddress,
         floorSuite: formData.floorSuite,
         city: formData.city,
         state: formData.state,
         postalCode: formData.postalCode,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber, // Changed to match backend
+        phoneNumber: formData.phoneNumber,
         email: formData.email,
-        password: formData.password,
-        confirmPassword: formData.confirmPassword, // Added
+        // password: formData.password,
+        // confirmPassword: formData.confirmPassword,
         termsAccepted: formData.termsAccepted,
-        countryCode: countryCode
+        countryCode: countryCode,
+        userId: userId // Include the user ID from token
       };
   
       const response = await fetch('http://localhost:5556/api/restaurants', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Include auth token
         },
         body: JSON.stringify(payload)
       });
@@ -90,10 +147,9 @@ const Registration = () => {
         throw new Error(errorData.message || 'Registration failed');
       }
       
-      // Set success state to true when registration is successful
       setSubmitSuccess(true);
       
-      // Reset form data if needed
+      // Reset form data
       setFormData({
         storeName: '',
         brandName: '',
@@ -107,8 +163,8 @@ const Registration = () => {
         state: '',
         postalCode: '',
         email: '',
-        password: '',            
-        confirmPassword: '',
+        // password: '',            
+        // confirmPassword: '',
         termsAccepted: false
       });
       
@@ -119,8 +175,9 @@ const Registration = () => {
       setIsSubmitting(false);
     }
   };
+
   const handleGoToLogin = () => {
-    navigate('/login'); // Navigate to login page
+    navigate('/homepage');
   };
 
   if (submitSuccess) {
@@ -130,16 +187,16 @@ const Registration = () => {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Registration Successful!</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Waiting for Approvel!</h2>
           <p className="text-gray-600 mb-6">
-            Thank you for registering your restaurant. We'll review your application and contact you soon.
+            Thank you for registering your restaurant. We'll review your application and give to access soon.
           </p>
           <div className="space-y-3">
             <button
               onClick={handleGoToLogin}
               className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
             >
-              Go to Login
+              Go to Dashboard
             </button>
             <button
               onClick={() => setSubmitSuccess(false)}
@@ -152,7 +209,6 @@ const Registration = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Full Image with Overlay Text */}
@@ -386,8 +442,8 @@ const Registration = () => {
                 required
               />
             </div>
-            <div className="flex flex-row gap-4">  {/* Flex container for horizontal layout */}
-  <div className="flex-1">  {/* Takes equal width */}
+            {/* <div className="flex flex-row gap-4">  Flex container for horizontal layout 
+  <div className="flex-1">  Takes equal width 
     <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
       Password
     </label>
@@ -402,7 +458,7 @@ const Registration = () => {
       required
     />
   </div>
-  <div className="flex-1">  {/* Takes equal width */}
+  <div className="flex-1">  Takes equal width 
     <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
       Confirm Password
     </label>
@@ -417,7 +473,7 @@ const Registration = () => {
       required
     />
   </div>
-</div>
+</div> */}
 
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">

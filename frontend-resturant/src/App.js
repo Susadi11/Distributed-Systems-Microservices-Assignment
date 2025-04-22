@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { Navigate } from "react-router-dom";
-import Home from "./pages/Home";
+// import Home from "./pages/Home";
 import Signup from "./pages/SignUp";
 import Login from "./pages/Login";
 import { AuthProvider } from "./context/AuthContext";
@@ -13,7 +13,9 @@ import MenuCatalog from "./pages/MenuCatalog";
 import MenuList from "./pages/MenuList";
 import AddProduct from "./pages/AddProduct";
 import Registration from "./pages/Registration";
+import HomePage from "./pages/HomePage";
 import Profile from "./pages/Profile";
+
 
 
 export default function App() {
@@ -21,10 +23,12 @@ export default function App() {
     <AuthProvider>
       <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/home" element={<Home />} />
+        {/* <Route path="/home" element={<Home />} /> */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Registration/>} />
+        
+
+     
         <Route
           path="/dashboard"
           element={
@@ -66,6 +70,23 @@ export default function App() {
             </PrivateRoute>
           }
         />
+         <Route
+          path="/register"
+          element={
+            <PrivateRoute allowedRoles={['resturant_admin']}>
+              <Registration />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/homepage"
+          element={
+            <PrivateRoute allowedRoles={['resturant_admin']}>
+              <HomePage />
+            </PrivateRoute>
+          }
+        />
+       
       </Routes>
       <ToastContainer />
     </AuthProvider>

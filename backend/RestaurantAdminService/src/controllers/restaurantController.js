@@ -18,22 +18,23 @@ exports.registerRestaurant = async (req, res) => {
       phoneNumber,
       email,
       termsAccepted,
-      password,
-      confirmPassword,
-      countryCode
+      // password,
+      // confirmPassword,
+      countryCode,
+      userId // Make sure to extract the userId from the request body
     } = req.body;
 
-    // Password confirmation check
-    if (password !== confirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Passwords do not match'
-      });
-    }
+    // // Password confirmation check
+    // if (password !== confirmPassword) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Passwords do not match'
+    //   });
+    // }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create restaurant objectac
+    // Create restaurant object
     const newRestaurant = new Restaurant({
       storeName,
       brandName,
@@ -54,19 +55,13 @@ exports.registerRestaurant = async (req, res) => {
         },
         email
       },
-      password: hashedPassword,
-      termsAccepted
+      // password: hashedPassword,
+      termsAccepted,
+      user: userId // Add the userId to the user field
     });
 
     // Save to database
     const savedRestaurant = await newRestaurant.save();
-
-    // // Optional: send confirmation email
-    // await sendRegistrationEmail({
-    //   email,
-    //   name: `${firstName} ${lastName}`,
-    //   restaurantName: storeName
-    // });
 
     res.status(201).json({
       success: true,
@@ -77,17 +72,16 @@ exports.registerRestaurant = async (req, res) => {
       },
       message: 'Restaurant registration submitted successfully!'
     });
-
   } catch (error) {
     console.error('Registration error:', error);
-
+    
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
         message: 'This email is already registered'
       });
     }
-
+    
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(val => val.message);
       return res.status(400).json({
@@ -95,7 +89,7 @@ exports.registerRestaurant = async (req, res) => {
         message: messages.join(', ')
       });
     }
-
+    
     res.status(500).json({
       success: false,
       message: 'Server error during registration'
@@ -159,4 +153,3 @@ exports.rejectRestaurant = async (req, res) => {
   }
 };
 
-// Add more controller methods as needed...
