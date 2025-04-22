@@ -1,17 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Check, Gift, MapPin, Clock, ChevronDown, Info, ChevronRight, CreditCard } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { useNavigate } from 'react-router-dom';
 
-// Fix for default marker icons in Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-    iconUrl: require('leaflet/dist/images/marker-icon.png'),
-    shadowUrl: require('leaflet/dist/images/marker-shadow.png')
-});
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+
+// Make sure the token is set before any mapbox operations
+mapboxgl.accessToken = MAPBOX_TOKEN;
 
 const Checkout = () => {
     const [deliveryOption, setDeliveryOption] = useState('door');
@@ -20,7 +16,17 @@ const Checkout = () => {
     const [instructions, setInstructions] = useState('');
     const [showPaymentMethods, setShowPaymentMethods] = useState(false);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
+    const [position, setPosition] = useState([79.9730, 6.9147]);
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [mapError, setMapError] = useState(false);
+    const [address, setAddress] = useState({
+        name: 'SLIIT Main Building',
+        description: 'Sri Lanka Institute of Information Technology, Malabe Campus',
+        street: 'New Kandy Rd, Malabe'
+    });
     const navigate = useNavigate();
+    const mapContainer = useRef(null);
+    const map = useRef(null);
 
     const orderSummary = {
         items: [
@@ -33,15 +39,97 @@ const Checkout = () => {
         uberOneSavings: 161.50
     };
 
-    // SLIIT Malabe Campus coordinates
-    const position = [6.9147, 79.9730];
     const phoneNumber = '+94 71 415 1567';
 
     const total = orderSummary.subtotal - orderSummary.promotion +
         orderSummary.deliveryFee + orderSummary.serviceFee;
 
+    // Verify token is valid before initializing map
+    useEffect(() => {
+        if (!mapboxgl.accessToken || mapboxgl.accessToken === "pk.ey") {
+            console.error("Invalid Mapbox token. Please provide a complete token.");
+            setMapError(true);
+            return;
+        }
+
+        // Continue with map initialization if token is valid
+        if (map.current) return; // Initialize map only once
+
+        try {
+            if (mapContainer.current) {
+                map.current = new mapboxgl.Map({
+                    container: mapContainer.current,
+                    style: 'mapbox://styles/mapbox/streets-v12',
+                    center: position, // [lng, lat]
+                    zoom: 15
+                });
+
+                // Add navigation controls
+                map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+                // Create a marker
+                const marker = new mapboxgl.Marker({ color: '#FF0000' })
+                    .setLngLat(position)
+                    .setPopup(new mapboxgl.Popup().setHTML(`<strong>${address.name}</strong><br>${address.description}`))
+                    .addTo(map.current);
+
+                // Try to get user location
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            const userLocation = [pos.coords.longitude, pos.coords.latitude];
+                            setPosition(userLocation);
+                            map.current.flyTo({
+                                center: userLocation,
+                                zoom: 16,
+                                essential: true
+                            });
+                            marker.setLngLat(userLocation);
+                        },
+                        (error) => {
+                            console.error("Location access denied or not available:", error);
+                        }
+                    );
+                }
+
+                map.current.on('load', () => {
+                    setMapLoaded(true);
+                });
+
+                map.current.on('error', (e) => {
+                    console.error("Mapbox error:", e);
+                    setMapError(true);
+                });
+            }
+        } catch (error) {
+            console.error("Error initializing Mapbox:", error);
+            setMapError(true);
+        }
+    }, []);
+
+    // Update marker position when position changes
+    useEffect(() => {
+        if (map.current && mapLoaded && !mapError) {
+            try {
+                // Remove previous markers
+                const markers = document.getElementsByClassName('mapboxgl-marker');
+                if (markers.length > 0) {
+                    Array.from(markers).forEach(marker => marker.remove());
+                }
+
+                // Add new marker
+                new mapboxgl.Marker({ color: '#FF0000' })
+                    .setLngLat(position)
+                    .setPopup(new mapboxgl.Popup().setHTML(`<strong>${address.name}</strong><br>${address.description}`))
+                    .addTo(map.current);
+            } catch (error) {
+                console.error("Error updating marker:", error);
+            }
+        }
+    }, [position, mapLoaded, address, mapError]);
+
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 pt-16"> {/* Added pt-16 for navbar space */}
             <div className="container mx-auto px-4 py-8 max-w-6xl">
                 <h1 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
 
@@ -57,36 +145,35 @@ const Checkout = () => {
                                     <MapPin className="w-5 h-5 text-red-600" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-semibold text-gray-900">SLIIT Main Building</h3>
+                                    <h3 className="font-semibold text-gray-900">{address.name}</h3>
                                     <p className="text-sm text-gray-600">
-                                        Sri Lanka Institute of Information Technology, Malabe Campus
+                                        {address.description}
                                     </p>
-                                    <p className="text-xs text-gray-500 mt-1">New Kandy Rd, Malabe</p>
+                                    <p className="text-xs text-gray-500 mt-1">{address.street}</p>
                                     <button className="text-red-600 text-sm font-medium mt-2 flex items-center">
                                         Edit location <ChevronDown className="w-4 h-4 ml-1" />
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Interactive Map */}
-                            <div className="h-64 rounded-lg overflow-hidden border border-gray-200 mb-4">
-                                <MapContainer
-                                    center={position}
-                                    zoom={16}
-                                    style={{ height: '100%', width: '100%' }}
-                                    zoomControl={false}
-                                >
-                                    <TileLayer
-                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                    />
-                                    <Marker position={position}>
-                                        <Popup>
-                                            SLIIT Main Building <br />
-                                            Malabe Campus
-                                        </Popup>
-                                    </Marker>
-                                </MapContainer>
+                            {/* Interactive Map with Mapbox */}
+                            <div className="h-64 rounded-lg overflow-hidden border border-gray-200 mb-4 relative" style={{ zIndex: 0 }}>
+                                {/* Error state for map */}
+                                {mapError && (
+                                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center flex-col p-4">
+                                        <p className="text-red-600 font-medium mb-2">Unable to load map</p>
+                                        <p className="text-sm text-center text-gray-600">Please check your Mapbox token configuration</p>
+                                    </div>
+                                )}
+
+                                {/* Loading state */}
+                                {!mapLoaded && !mapError && (
+                                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                                        <p>Loading map...</p>
+                                    </div>
+                                )}
+
+                                <div ref={mapContainer} className="h-full w-full" />
                             </div>
                         </div>
 
@@ -162,7 +249,7 @@ const Checkout = () => {
                     </div>
 
                     {/* Right Column - Order Summary */}
-                    <div className="lg:w-1/3 bg-white p-6 rounded-xl shadow-sm h-fit sticky top-4">
+                    <div className="lg:w-1/3 bg-white p-6 rounded-xl shadow-sm h-fit sticky top-20" style={{ zIndex: 0 }}> {/* Added z-index to prevent navbar overlap */}
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">Order summary</h2>
 
                         <div className="flex items-center justify-between mb-4">
@@ -252,16 +339,15 @@ const Checkout = () => {
                                 >
                                     <div className="flex items-center">
                                         {selectedPaymentMethod === 'cash' ? (
-                                            <div
-                                                className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                                            <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center mr-3">
                                                 <Check className="w-4 h-4 text-red-600"/>
                                             </div>
                                         ) : (
                                             <CreditCard className="w-6 h-6 text-gray-500 mr-3"/>
                                         )}
                                         <span className="font-medium">
-                                    {selectedPaymentMethod === 'cash' ? 'Cash' : 'Credit/Debit Card'}
-                                </span>
+                                          {selectedPaymentMethod === 'cash' ? 'Cash' : 'Credit/Debit Card'}
+                                        </span>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-gray-400"/>
                                 </button>
@@ -276,8 +362,7 @@ const Checkout = () => {
                                             className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'cash' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                                         >
                                             {selectedPaymentMethod === 'cash' && (
-                                                <div
-                                                    className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
                                                     <Check className="w-3 h-3 text-white"/>
                                                 </div>
                                             )}
@@ -286,14 +371,12 @@ const Checkout = () => {
 
                                         <button
                                             onClick={() => {
-                                                // Navigate to SelectPayment page for card selection
-                                                window.location.href = '/select-payment';
+                                                navigate('/select-payment');
                                             }}
                                             className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'card' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                                         >
                                             {selectedPaymentMethod === 'card' && (
-                                                <div
-                                                    className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
                                                     <Check className="w-3 h-3 text-white"/>
                                                 </div>
                                             )}
@@ -303,7 +386,6 @@ const Checkout = () => {
                                 )}
                             </div>
                         </div>
-
 
                         {/* Place Order Button */}
                         <button

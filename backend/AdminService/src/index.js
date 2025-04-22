@@ -1,10 +1,15 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
+const bodyParser = require('body-parser');  
 
 const app = express();
 const PORT = process.env.PORT || 5555;
 const MONGOURI = process.env.MONGOURI;
+
+// Use cors middleware
+app.use(cors());
 
 mongoose
     .connect(MONGOURI)
@@ -17,5 +22,8 @@ mongoose
     .catch((error) => {
         console.log(error);
     });
+
+const restaurantProxyRoutes = require('./routes/restaurantProxyRoutes');
+app.use('/api/admin', restaurantProxyRoutes);
 
 module.exports = app;

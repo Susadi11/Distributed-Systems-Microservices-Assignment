@@ -4,6 +4,7 @@ import { FiMenu, FiX, FiLogOut } from 'react-icons/fi';
 import { FaShoppingCart, FaUser, FaUserCircle } from 'react-icons/fa';
 import { IoRestaurant } from 'react-icons/io5';
 import { MdDeliveryDining, MdHome } from 'react-icons/md';
+import { useAuth } from '../../AuthContext';
 
 // Reusable NavLink for desktop
 function NavLink({ to, icon, text }) {
@@ -34,24 +35,18 @@ function MobileNavLink({ to, icon, text }) {
 export default function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Use the auth context instead of local state
+    const { user, logout } = useAuth();
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
     };
 
-    // Check authentication status
-    useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        setIsLoggedIn(!!token);
-    }, [location]);
-
     const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        setIsLoggedIn(false);
+        logout(); // Use the logout function from context
         navigate('/');
         setMobileMenuOpen(false);
     };
@@ -104,15 +99,18 @@ export default function Navbar() {
                             </span>
                         </Link>
 
-                        {isLoggedIn ? (
+                        {user ? (
                             <>
-                                <Link
-                                    to="/profile"
-                                    className="p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-                                    aria-label="User Profile"
-                                >
-                                    <FaUserCircle className="h-5 w-5" />
-                                </Link>
+                                <div className="flex items-center">
+                                    <Link
+                                        to="/profile"
+                                        className="p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors duration-200 flex items-center"
+                                        aria-label="User Profile"
+                                    >
+                                        <FaUserCircle className="h-5 w-5 mr-1" />
+                                        <span className="text-sm font-medium">{user.name || 'Profile'}</span>
+                                    </Link>
+                                </div>
                                 <button
                                     onClick={handleLogout}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 transition-colors duration-200 rounded-full flex items-center"
@@ -166,9 +164,13 @@ export default function Navbar() {
                     <MobileNavLink to="/cart" icon={<FaShoppingCart className="mr-2" />} text="Cart" />
 
                     <div className="pt-4 border-t border-gray-100 mt-2">
-                        {isLoggedIn ? (
+                        {user ? (
                             <>
-                                <MobileNavLink to="/profile" icon={<FaUserCircle className="mr-2" />} text="Profile" />
+                                <MobileNavLink
+                                    to="/profile"
+                                    icon={<FaUserCircle className="mr-2" />}
+                                    text={user.name || 'Profile'}
+                                />
                                 <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-red-600 transition-colors duration-200"

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import {
     Check,
     Clock,
@@ -14,22 +13,298 @@ import {
     Navigation,
     AlertCircle
 } from 'lucide-react';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
-// Fix for default marker icons in Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-    iconUrl: require('leaflet/dist/images/marker-icon.png'),
-    shadowUrl: require('leaflet/dist/images/marker-shadow.png')
-});
+// Initialize Mapbox with your token from .env file
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-// Custom markers
-const createCustomIcon = (iconName, color) => {
-    return L.divIcon({
-        className: 'custom-marker',
-        html: `
+// The 5 specific phases of delivery
+const phases = [
+    { id: 1, label: 'Order Confirmed', icon: AlertCircle, description: 'Restaurant confirming your order', color: '#FF3B30' },
+    { id: 2, label: 'Finding Driver', icon: User, description: 'Looking for delivery partner', color: '#FF3B30' },
+    { id: 3, label: 'Preparing', icon: Store, description: 'Restaurant preparing your order', color: '#FF3B30' },
+    { id: 4, label: 'On The Way', icon: ShoppingBag, description: 'Driver picking up your order', color: '#FF3B30' },
+    { id: 5, label: 'Delivered', icon: Navigation, description: 'Driver delivering to you', color: '#FF3B30' }
+];
+
+const Pending = () => {
+    const navigate = useNavigate();
+    const [currentPhase, setCurrentPhase] = useState(1);
+    const [orderStatus, setOrderStatus] = useState('pending');
+    const [driverInfo, setDriverInfo] = useState(null);
+    const [estimatedTime, setEstimatedTime] = useState('25-35 min');
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [mapError, setMapError] = useState(false);
+
+    // Map references
+    const mapContainer = useRef(null);
+    const map = useRef(null);
+    const markers = useRef({
+        user: null,
+        restaurant: null,
+        driver: null
+    });
+    const routeLine = useRef(null);
+
+    // Positions
+    const [restaurantPosition, setRestaurantPosition] = useState([79.9701, 6.9142]); // Barista Malabe [lng, lat]
+    const [userPosition, setUserPosition] = useState([79.9730, 6.9147]); // Default to SLIIT [lng, lat]
+    const [driverPosition, setDriverPosition] = useState([79.9680, 6.9120]); // Initial random driver position [lng, lat]
+    const [routePath, setRoutePath] = useState([]);
+    const CurrentIcon = phases[currentPhase - 1].icon;
+
+    // Order details
+    const orderDetails = {
+        orderId: 'UB38921EF',
+        restaurant: 'Barista Malabe',
+        items: [
+            { name: 'Barista Express', quantity: 1, price: 1250 },
+            { name: 'Cappuccino', quantity: 2, price: 450 },
+            { name: 'Chocolate Cake', quantity: 1, price: 650 }
+        ],
+        subtotal: 2800,
+        deliveryFee: 200,
+        discount: 150,
+        total: 2850
+    };
+
+    // Initialize Mapbox map
+    useEffect(() => {
+        if (!process.env.REACT_APP_MAPBOX_TOKEN) {
+            console.error("Missing Mapbox token - add REACT_APP_MAPBOX_TOKEN to .env");
+            setMapError(true);
+            return;
+        }
+
+        if (map.current) return; // Initialize map only once
+
+        try {
+            map.current = new mapboxgl.Map({
+                container: mapContainer.current,
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: userPosition,
+                zoom: 15
+            });
+
+            // Add navigation controls
+            map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+            map.current.on('load', () => {
+                setMapLoaded(true);
+                updateMarkers();
+                if (routePath.length > 0) {
+                    updateRoute();
+                }
+            });
+
+            map.current.on('error', (e) => {
+                console.error("Mapbox error:", e);
+                setMapError(true);
+            });
+
+        } catch (error) {
+            console.error("Error initializing Mapbox:", error);
+            setMapError(true);
+        }
+
+        return () => {
+            if (map.current) {
+                map.current.remove();
+                map.current = null;
+            }
+        };
+    }, []);
+
+    // Get user's current location
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const newPos = [position.coords.longitude, position.coords.latitude];
+                    setUserPosition(newPos);
+                    if (map.current) {
+                        map.current.flyTo({
+                            center: newPos,
+                            zoom: 15,
+                            essential: true
+                        });
+                    }
+                },
+                (error) => {
+                    console.error("Error getting location:", error);
+                    // Fallback to SLIIT coordinates if location access is denied
+                    setUserPosition([79.9730, 6.9147]);
+                }
+            );
+        }
+    }, []);
+
+    // Generate a path for the driver
+    useEffect(() => {
+        if (driverInfo && userPosition && restaurantPosition) {
+            const generatePath = () => {
+                const path = [restaurantPosition];
+                const steps = 10;
+
+                for (let i = 1; i < steps; i++) {
+                    const factor = i / steps;
+                    const lng = restaurantPosition[0] + (userPosition[0] - restaurantPosition[0]) * factor;
+                    const lat = restaurantPosition[1] + (userPosition[1] - restaurantPosition[1]) * factor;
+
+                    // Add some randomness to make it look more like a road
+                    const latOffset = (Math.random() - 0.5) * 0.0015;
+                    const lngOffset = (Math.random() - 0.5) * 0.0015;
+
+                    path.push([lng + lngOffset, lat + latOffset]);
+                }
+
+                path.push(userPosition);
+                return path;
+            };
+
+            setRoutePath(generatePath());
+        }
+    }, [driverInfo, userPosition, restaurantPosition]);
+
+    // Update route when path changes
+    useEffect(() => {
+        if (mapLoaded && routePath.length > 0) {
+            updateRoute();
+        }
+    }, [routePath, mapLoaded]);
+
+    // Update markers when positions change
+    useEffect(() => {
+        if (mapLoaded) {
+            updateMarkers();
+            updateMapView();
+        }
+    }, [userPosition, restaurantPosition, driverPosition, driverInfo, mapLoaded]);
+
+    // Update map view based on current phase
+    const updateMapView = () => {
+        if (!map.current) return;
+
+        let centerPos;
+        if (currentPhase >= 4) {
+            centerPos = driverPosition;
+        } else if (currentPhase >= 2) {
+            centerPos = restaurantPosition;
+        } else {
+            centerPos = userPosition;
+        }
+
+        map.current.flyTo({
+            center: centerPos,
+            zoom: 15,
+            essential: true
+        });
+    };
+
+    // Update all markers on the map
+    const updateMarkers = () => {
+        if (!map.current) return;
+
+        // Remove existing markers
+        Object.values(markers.current).forEach(marker => {
+            if (marker) marker.remove();
+        });
+
+        // User marker
+        markers.current.user = new mapboxgl.Marker({
+            element: createMarkerElement('user', '#34C759')
+        })
+            .setLngLat(userPosition)
+            .setPopup(new mapboxgl.Popup().setHTML(`
+                <div class="font-medium">Delivery Location</div>
+                <div class="text-sm">Your current location</div>
+            `))
+            .addTo(map.current);
+
+        // Restaurant marker
+        markers.current.restaurant = new mapboxgl.Marker({
+            element: createMarkerElement('restaurant', '#FF9500')
+        })
+            .setLngLat(restaurantPosition)
+            .setPopup(new mapboxgl.Popup().setHTML(`
+                <div class="font-medium">${orderDetails.restaurant}</div>
+                <div class="text-sm">Preparing your order</div>
+            `))
+            .addTo(map.current);
+
+        // Driver marker (if assigned)
+        if (driverInfo) {
+            markers.current.driver = new mapboxgl.Marker({
+                element: createDriverMarkerElement()
+            })
+                .setLngLat(driverPosition)
+                .setPopup(new mapboxgl.Popup().setHTML(`
+                    <div class="font-medium">Your Driver</div>
+                    <div class="text-sm">${driverInfo.name}</div>
+                    <div class="text-sm">${driverInfo.vehicle} (${driverInfo.licensePlate})</div>
+                `))
+                .addTo(map.current);
+        }
+    };
+
+    // Update the route line on the map
+    const updateRoute = () => {
+        if (!map.current) return;
+
+        // Remove existing route line if it exists
+        if (routeLine.current) {
+            if (map.current.getLayer('route')) {
+                map.current.removeLayer('route');
+            }
+            if (map.current.getSource('route')) {
+                map.current.removeSource('route');
+            }
+        }
+
+        // Add the new route line
+        map.current.addSource('route', {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    type: 'LineString',
+                    coordinates: routePath
+                }
+            }
+        });
+
+        map.current.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            paint: {
+                'line-color': '#FF3B30',
+                'line-width': 4,
+                'line-opacity': 0.7,
+                'line-dasharray': [2, 2]
+            }
+        });
+
+        // Fit the map to the bounds of the route
+        const bounds = new mapboxgl.LngLatBounds();
+        routePath.forEach(point => bounds.extend(point));
+        map.current.fitBounds(bounds, {
+            padding: 50,
+            maxZoom: 15
+        });
+    };
+
+    // Create marker element
+    const createMarkerElement = (iconName, color) => {
+        const el = document.createElement('div');
+        el.className = 'custom-marker';
+        el.innerHTML = `
             <div style="
                 background-color: ${color};
                 width: 32px;
@@ -44,21 +319,17 @@ const createCustomIcon = (iconName, color) => {
             ">
                 ${iconName === 'user' ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>' :
             iconName === 'restaurant' ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>' :
-                iconName === 'driver' ? '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="2"></circle><path d="M9 3h.01"></path><path d="M9 21h.01"></path><path d="M3 9v.01"></path><path d="M21 9h.01"></path><path d="M3 17l6-6"></path><path d="M15 3.8L19 9h-8l4 8.2"></path></svg>' :
-                    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>'}
+                '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>'}
             </div>
-        `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-        popupAnchor: [0, -16]
-    });
-};
+        `;
+        return el;
+    };
 
-// Create a scooter driver icon
-const createDriverIcon = () => {
-    return L.divIcon({
-        className: 'driver-marker',
-        html: `
+    // Create driver marker element
+    const createDriverMarkerElement = () => {
+        const el = document.createElement('div');
+        el.className = 'driver-marker';
+        el.innerHTML = `
             <div style="
                 position: relative;
                 width: 48px;
@@ -90,136 +361,9 @@ const createDriverIcon = () => {
                     </svg>
                 </div>
             </div>
-        `,
-        iconSize: [48, 48],
-        iconAnchor: [24, 24],
-        popupAnchor: [0, -24]
-    });
-};
-
-// Map update component
-const MapUpdater = ({ position, path }) => {
-    const map = useMap();
-
-    useEffect(() => {
-        map.setView(position, 15);
-    }, [position, map]);
-
-    return null;
-};
-
-// Component to draw route on map
-const RouteDisplay = ({ path }) => {
-    const map = useMap();
-
-    // Create a ref to store the polyline instance
-    const polylineRef = useRef(null);
-
-    useEffect(() => {
-        if (path && path.length > 1) {
-            // If we already have a polyline, remove it before creating a new one
-            if (polylineRef.current) {
-                polylineRef.current.removeFrom(map);
-            }
-
-            // Create a new polyline
-            polylineRef.current = L.polyline(path, {
-                color: '#FF3B30',
-                weight: 4,
-                opacity: 0.7,
-                dashArray: '10, 10',
-                lineCap: 'round',
-                lineJoin: 'round'
-            }).addTo(map);
-
-            // Fit the map to the bounds of the polyline
-            map.fitBounds(polylineRef.current.getBounds(), {
-                padding: [50, 50],
-                maxZoom: 15
-            });
-        }
-
-        return () => {
-            if (polylineRef.current) {
-                polylineRef.current.removeFrom(map);
-            }
-        };
-    }, [map, path]);
-
-    return null;
-};
-
-// The 5 specific phases of delivery
-const phases = [
-    { id: 1, label: 'Order Confirmed', icon: AlertCircle, description: 'Restaurant confirming your order', color: '#FF3B30' },
-    { id: 2, label: 'Finding Driver', icon: User, description: 'Looking for delivery partner', color: '#FF3B30' },
-    { id: 3, label: 'Preparing', icon: Store, description: 'Restaurant preparing your order', color: '#FF3B30' },
-    { id: 4, label: 'On The Way', icon: ShoppingBag, description: 'Driver picking up your order', color: '#FF3B30' },
-    { id: 5, label: 'Delivered', icon: Navigation, description: 'Driver delivering to you', color: '#FF3B30' }
-];
-
-const Pending = () => {
-    const navigate = useNavigate();
-    const [currentPhase, setCurrentPhase] = useState(1);
-    const [orderStatus, setOrderStatus] = useState('pending');
-    const [driverInfo, setDriverInfo] = useState(null);
-    const [estimatedTime, setEstimatedTime] = useState('25-35 min');
-
-    // Restaurant and user locations
-    const restaurantPosition = [6.9197, 79.9783]; // Example location
-    const userPosition = [6.9147, 79.9730]; // SLIIT
-    const [driverPosition, setDriverPosition] = useState([6.9187, 79.9763]); // Initial driver position
-    const [routePath, setRoutePath] = useState([]);
-    const CurrentIcon = phases[currentPhase - 1].icon;
-
-    // Order details
-    const orderDetails = {
-        orderId: 'UB38921EF',
-        restaurant: 'Barista Coffee House',
-        items: [
-            { name: 'Barista Express', quantity: 1, price: 1250 },
-            { name: 'Cappuccino', quantity: 2, price: 450 },
-            { name: 'Chocolate Cake', quantity: 1, price: 650 }
-        ],
-        subtotal: 2800,
-        deliveryFee: 200,
-        discount: 150,
-        total: 2850
+        `;
+        return el;
     };
-
-    // Generate a path for the driver
-    useEffect(() => {
-        if (driverInfo) {
-            // Calculate route from restaurant to user with some waypoints
-            const generatePath = () => {
-                // Start with the restaurant
-                const path = [restaurantPosition];
-
-                // Calculate the number of points for the path
-                const steps = 10;
-
-                // Calculate intermediate points
-                for (let i = 1; i < steps; i++) {
-                    const factor = i / steps;
-                    const lat = restaurantPosition[0] + (userPosition[0] - restaurantPosition[0]) * factor;
-                    const lng = restaurantPosition[1] + (userPosition[1] - restaurantPosition[1]) * factor;
-
-                    // Add some randomness to make it look more like a road
-                    const latOffset = (Math.random() - 0.5) * 0.0015;
-                    const lngOffset = (Math.random() - 0.5) * 0.0015;
-
-                    path.push([lat + latOffset, lng + lngOffset]);
-                }
-
-                // End with the user location
-                path.push(userPosition);
-
-                return path;
-            };
-
-            setRoutePath(generatePath());
-        }
-    }, [driverInfo]);
 
     // Simulate order progress
     useEffect(() => {
@@ -271,15 +415,15 @@ const Pending = () => {
             // Simulate driver movement
             const moveDriver = setInterval(() => {
                 setDriverPosition(prevPos => {
-                    const lat = prevPos[0] + (userPosition[0] - prevPos[0]) * 0.1;
-                    const lng = prevPos[1] + (userPosition[1] - prevPos[1]) * 0.1;
+                    const lng = prevPos[0] + (userPosition[0] - prevPos[0]) * 0.1;
+                    const lat = prevPos[1] + (userPosition[1] - prevPos[1]) * 0.1;
 
-                    if (Math.abs(lat - userPosition[0]) < 0.0005 && Math.abs(lng - userPosition[1]) < 0.0005) {
+                    if (Math.abs(lat - userPosition[1]) < 0.0005 && Math.abs(lng - userPosition[0]) < 0.0005) {
                         clearInterval(moveDriver);
                         setOrderStatus('arrived');
                     }
 
-                    return [lat, lng];
+                    return [lng, lat];
                 });
             }, 2000);
 
@@ -295,7 +439,7 @@ const Pending = () => {
                 }
             });
         };
-    }, []);
+    }, [userPosition]);
 
     // Status messages based on order status
     const getStatusMessage = () => {
@@ -319,11 +463,6 @@ const Pending = () => {
         if (currentPhase >= 3) return `Arriving in ${estimatedTime}`;
         return `Estimated arrival: ${estimatedTime}`;
     };
-
-    // Custom icons
-    const driverIcon = createDriverIcon();
-    const restaurantIcon = createCustomIcon('restaurant', '#FF9500');
-    const destinationIcon = createCustomIcon('user', '#34C759');
 
     return (
         <div className="min-h-screen bg-white mt-20">
@@ -358,7 +497,7 @@ const Pending = () => {
                             </div>
                         </div>
 
-                        {/* Enhanced Progress Bar with 5 Distinct Phases - UPDATED */}
+                        {/* Enhanced Progress Bar with 5 Distinct Phases */}
                         <div className="bg-white p-6 rounded-xl shadow-sm mb-4">
                             <h3 className="font-semibold text-gray-900 mb-6">Order Progress</h3>
 
@@ -445,60 +584,23 @@ const Pending = () => {
                         {/* Map - Using Mapbox */}
                         <div className="bg-white p-4 rounded-xl shadow-sm">
                             <h3 className="font-semibold text-gray-900 mb-3">Track your order</h3>
-                            <div className="h-96 rounded-xl overflow-hidden border border-gray-200">
-                                <MapContainer
-                                    center={userPosition}
-                                    zoom={15}
-                                    style={{ height: '100%', width: '100%' }}
-                                    zoomControl={false}
-                                >
-                                    {/* PASTE YOUR MAPBOX URL BELOW */}
-                                    <TileLayer
-                                        url="https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}"
-                                        attribution='Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>'
-                                        id="YOUR_MAPBOX_STYLE_ID_HERE" // REPLACE WITH YOUR STYLE ID
-                                        accessToken="YOUR_MAPBOX_ACCESS_TOKEN_HERE" // REPLACE WITH YOUR ACCESS TOKEN
-                                        tileSize={512}
-                                        zoomOffset={-1}
-                                    />
-                                    {/* END OF MAPBOX URL CONFIGURATION */}
+                            <div className="h-96 rounded-xl overflow-hidden border border-gray-200 relative">
+                                {/* Error state for map */}
+                                {mapError && (
+                                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center flex-col p-4">
+                                        <p className="text-red-600 font-medium mb-2">Unable to load map</p>
+                                        <p className="text-sm text-center text-gray-600">Please check your Mapbox token configuration</p>
+                                    </div>
+                                )}
 
-                                    {/* User marker */}
-                                    <Marker position={userPosition} icon={destinationIcon}>
-                                        <Popup>
-                                            <div className="font-medium">Delivery Location</div>
-                                            <div className="text-sm">SLIIT Malabe Campus</div>
-                                        </Popup>
-                                    </Marker>
+                                {/* Loading state */}
+                                {!mapLoaded && !mapError && (
+                                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                                        <p>Loading map...</p>
+                                    </div>
+                                )}
 
-                                    {/* Restaurant marker */}
-                                    <Marker position={restaurantPosition} icon={restaurantIcon}>
-                                        <Popup>
-                                            <div className="font-medium">{orderDetails.restaurant}</div>
-                                            <div className="text-sm">Preparing your order</div>
-                                        </Popup>
-                                    </Marker>
-
-                                    {/* Driver marker - only show if driver is assigned */}
-                                    {driverInfo && (
-                                        <Marker position={driverPosition} icon={driverIcon}>
-                                            <Popup>
-                                                <div className="font-medium">Your Driver</div>
-                                                <div className="text-sm">{driverInfo.name}</div>
-                                                <div className="text-sm">{driverInfo.vehicle} ({driverInfo.licensePlate})</div>
-                                            </Popup>
-                                        </Marker>
-                                    )}
-
-                                    {/* Add the route path */}
-                                    {driverInfo && routePath.length > 0 && <RouteDisplay path={routePath} />}
-
-                                    <MapUpdater position={
-                                        currentPhase >= 4 ? driverPosition :
-                                            currentPhase >= 2 ? restaurantPosition :
-                                                userPosition
-                                    } />
-                                </MapContainer>
+                                <div ref={mapContainer} className="h-full w-full" />
                             </div>
                         </div>
                     </div>
