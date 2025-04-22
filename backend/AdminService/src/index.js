@@ -18,4 +18,9 @@ mongoose
         console.log(error);
     });
 
+    const restaurantProxyRoutes = require('./routes/restaurantProxyRoutes');
+    app.use('/api/admin', restaurantProxyRoutes);
+    
+    
+
 module.exports = app;

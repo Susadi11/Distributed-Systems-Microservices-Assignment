@@ -103,21 +103,28 @@ exports.registerRestaurant = async (req, res) => {
   }
 };
 
-
 exports.getRestaurants = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find();
+    const pending = await Restaurant.find({ status: 'pending' });
+    const verified = await Restaurant.find({ status: 'verified' });
+    const rejected = await Restaurant.find({ status: 'rejected' });
+
     res.status(200).json({
       success: true,
-      count: restaurants.length,
-      data: restaurants
+      data: {
+        pending,
+        verified,
+        rejected
+      }
     });
   } catch (error) {
+    console.error('Error fetching restaurants by status:', error);
     res.status(500).json({
       success: false,
       message: 'Server error fetching restaurants'
     });
   }
 };
+
 
 // Add more controller methods as needed...
