@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Profile() {
   const { restaurantId } = useParams();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  
   const [formData, setFormData] = useState({
     description: '',
     openTime: '09:00',
@@ -15,35 +18,189 @@ function Profile() {
   const [previewImage, setPreviewImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [restaurantData, setRestaurantData] = useState(null);
 
-  // Check if profile already exists
+  // Check authentication on component mount
   useEffect(() => {
-    const checkProfile = async () => {
+    if (!isAuthenticated) {
+      setMessage({
+        text: 'Authentication required. Redirecting to login...',
+        type: 'error'
+      });
+      // Redirect after showing message
+      const timer = setTimeout(() => navigate('/login'), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Load restaurant data only if authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      setMessage({
+        text: 'Authentication token missing. Please login again.',
+        type: 'error'
+      });
+      return;
+    }
+    
+
+    const loadRestaurantData = async () => {
       try {
-        const response = await fetch(`/api/restaurants/${restaurantId}`);
+        const response = await fetch(`/api/restaurants/${restaurantId}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        
+        if (response.status === 401) {
+          setMessage({
+            text: 'Session expired. Please login again.',
+            type: 'error'
+          });
+          navigate('/login');
+          return;
+        }
+
         const data = await response.json();
         
-        if (data.restaurant?.description) {
+        if (data.restaurant && data.restaurant.user !== user.id) {
           setMessage({
-            text: 'Profile already exists. You will be redirected to edit page.',
-            type: 'info'
+            text: 'You are not authorized to edit this restaurant.',
+            type: 'error'
           });
-          setTimeout(() => navigate(`/restaurant/${restaurantId}/edit`), 3000);
+          return;
+        }
+        
+        setRestaurantData(data.restaurant);
+        
+        if (data.restaurant) {
+          setFormData({
+            description: data.restaurant.description || '',
+            openTime: data.restaurant.openingHours?.openTime || '09:00',
+            closeTime: data.restaurant.openingHours?.closeTime || '22:00',
+            isOpenNow: data.restaurant.isOpenNow || false,
+            cuisineTypes: data.restaurant.cuisineTypes?.join(', ') || ''
+          });
+          
+          if (data.restaurant.profileImage?.length > 0) {
+            setPreviewImage(data.restaurant.profileImage[0]);
+          }
         }
       } catch (error) {
-        console.error('Error checking profile:', error);
+        console.error('Error loading restaurant data:', error);
+        setMessage({
+          text: 'Failed to load restaurant data. Please try again.',
+          type: 'error'
+        });
       }
     };
     
-    checkProfile();
-  }, [restaurantId, navigate]);
+    if (restaurantId && user?.id) {
+      loadRestaurantData();
+    }
+  }, [restaurantId, user, isAuthenticated, navigate]);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setMessage({ text: '', type: '' });
+  
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken || !user) {
+      setMessage({ 
+        text: 'Authentication required. Please login again.', 
+        type: 'error' 
+      });
+      setIsSubmitting(false);
+      return;
+    }
+  
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('openTime', formData.openTime);
+      formDataToSend.append('closeTime', formData.closeTime);
+      formDataToSend.append('isOpenNow', formData.isOpenNow.toString());
+      formDataToSend.append('cuisineTypes', formData.cuisineTypes);
+      
+      if (file) {
+        formDataToSend.append('profileImage', file);
+      }
+  
+      const response = await fetch(`http://localhost:5556/api/restaurants/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+          // The content-type is correctly omitted for FormData
+        },
+        body: formDataToSend
+      });
+  
+      // First check if response exists (network error handling)
+      if (!response) {
+        throw new Error('Network error - no response from server');
+      }
+  
+      // Then check response status
+      if (!response.ok) {
+        // Try to get error message from response
+        const errorText = await response.text();
+        try {
+          // If response is JSON
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.message || `Server error: ${response.status}`);
+        } catch {
+          // If response is HTML or plain text
+          throw new Error(errorText || `Server error: ${response.status}`);
+        }
+      }
+  
+      const data = await response.json();
+  
+      setMessage({
+        text: 'Profile updated successfully!', 
+        type: 'success'
+      });
+      
+      setTimeout(() => navigate(`/restaurant/dashboard`), 2000);
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setMessage({
+        text: error.message || 'Something went wrong. Please try again.',
+        type: 'error'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      setFile(selectedFile);
+      // Validate file type and size
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      const maxSize = 5 * 1024 * 1024; // 5MB
       
-      // Create preview for the selected image
+      if (!validTypes.includes(selectedFile.type)) {
+        setMessage({
+          text: 'Only JPEG, PNG, or GIF images are allowed',
+          type: 'error'
+        });
+        return;
+      }
+      
+      if (selectedFile.size > maxSize) {
+        setMessage({
+          text: 'Image size must be less than 5MB',
+          type: 'error'
+        });
+        return;
+      }
+      
+      setFile(selectedFile);
       const reader = new FileReader();
       reader.onload = () => {
         setPreviewImage(reader.result);
@@ -52,51 +209,20 @@ function Profile() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setMessage({ text: '', type: '' });
-
-    const data = new FormData();
-    data.append('description', formData.description);
-    data.append('openTime', formData.openTime);
-    data.append('closeTime', formData.closeTime);
-    data.append('isOpenNow', formData.isOpenNow.toString());
-    data.append('cuisineTypes', formData.cuisineTypes);
-    if (file) data.append('profileImage', file);
-
-    try {
-      // Match endpoint to your backend route structure
-      const response = await fetch(`/api/restaurants/${restaurantId}/profile`, {
-        method: 'POST',
-        body: data
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to create profile');
-      }
-
-      setMessage({ 
-        text: 'Profile created successfully! Redirecting...', 
-        type: 'success' 
-      });
-      
-      setTimeout(() => {
-        navigate(`/restaurant/${restaurantId}`);
-      }, 2000);
-
-    } catch (error) {
-      setMessage({ 
-        text: error.message || 'An error occurred', 
-        type: 'error' 
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // If not authenticated, show only the message (will redirect)
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow">
+          <div className={`p-4 rounded-md ${
+            message.type === 'error' ? 'bg-red-100 text-red-800' : ''
+          }`}>
+            {message.text}
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
@@ -157,7 +283,6 @@ function Profile() {
               </div>
             </div>
 
-            {/* Rest of the form stays the same */}
             {/* Description */}
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">

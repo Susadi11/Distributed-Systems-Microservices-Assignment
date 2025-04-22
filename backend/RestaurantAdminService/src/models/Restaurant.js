@@ -82,12 +82,12 @@ const restaurantSchema = new mongoose.Schema({
       }
     }
   },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters'],
-    select: false
-  },
+  // password: {
+  //   type: String,
+  //   required: [true, 'Password is required'],
+  //   minlength: [6, 'Password must be at least 6 characters'],
+  //   select: false
+  // },
 
   registrationDate: {
     type: Date,
@@ -107,22 +107,60 @@ const restaurantSchema = new mongoose.Schema({
       },
       message: 'You must accept the terms and conditions'
     }
-  }
+  },
+  user:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
+  profileImage:  [{
+    type: String,
+    validate: {
+      validator: function(v) {
+        // Validate URL format (either local path or full URL)
+        return /^(\/uploads\/.+|https?:\/\/.+)/.test(v);
+      },
+      message: props => `${props.value} is not a valid image path!`
+    }
+  }],
+  openingHours: {
+    open: {
+      type: String,
+      default: '09:00'
+    },
+    close: {
+      type: String,
+      default: '22:00'
+    }
+  },
+  isOpenNow: {
+    type: Boolean,
+    default: false
+  },
+  cuisineTypes: [{
+    type: String,
+    trim: true
+  }],
   
+ 
 }, { timestamps: true });
 
-// Hash password before saving
-restaurantSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  });
+// // Hash password before saving
+// restaurantSchema.pre('save', async function (next) {
+//     if (!this.isModified('password')) return next();
+//     const salt = await bcrypt.genSalt(10);
+//     this.password = await bcrypt.hash(this.password, salt);
+//     next();
+//   });
   
-  // Optional: method to compare password during login
-  restaurantSchema.methods.comparePassword = function (enteredPassword) {
-    return bcrypt.compare(enteredPassword, this.password);
-  };
+//   // Optional: method to compare password during login
+//   restaurantSchema.methods.comparePassword = function (enteredPassword) {
+//     return bcrypt.compare(enteredPassword, this.password);
+//   };
   
 
 // Add text index for search functionality
