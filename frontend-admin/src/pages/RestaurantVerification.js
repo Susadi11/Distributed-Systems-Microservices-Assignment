@@ -24,26 +24,40 @@ const RestaurantVerification = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [pendingRes, verifiedRes, rejectedRes] = await Promise.all([
-        axios.get('http://localhost:5555/api/restaurants/pending'),
-        axios.get('http://localhost:5555/api/restaurants/verified'),
-        axios.get('http://localhost:5555/api/restaurants/rejected')
-      ]);
-      setPendingRestaurants(pendingRes.data);
-      setVerifiedRestaurants(verifiedRes.data);
-      setRejectedRestaurants(rejectedRes.data);
+      const res = await axios.get('http://localhost:5000/api/admin/proxy/restaurants'); 
+  
+      console.log('Full API response:', res.data); // Debugging
+      
+      // Transform the data to match your UI expectations
+      const transformRestaurant = (restaurant) => ({
+        _id: restaurant._id,
+        name: restaurant.storeName,
+        brandName: restaurant.brandName,
+        owner: `${restaurant.contact.firstName} ${restaurant.contact.lastName}`,
+        email: restaurant.contact.email,
+        phone: `${restaurant.contact.phone.countryCode} ${restaurant.contact.phone.number}`,
+        address: `${restaurant.address.street}, ${restaurant.address.city}, ${restaurant.address.country}`,
+        status: restaurant.status,
+        submittedDate: restaurant.registrationDate || restaurant.createdAt,
+        // Add other fields as needed
+      });
+  
+      setPendingRestaurants(res.data.data.pending.map(transformRestaurant) || []);
+      setVerifiedRestaurants(res.data.data.verified.map(transformRestaurant) || []);
+      setRejectedRestaurants(res.data.data.rejected.map(transformRestaurant) || []);
     } catch (err) {
-      console.error('Failed to fetch data:', err); // 👈 Add this
-      setError('Failed to load restaurant data');
+      console.error('Error fetching restaurant data:', err);
+      setError('Failed to load restaurant data. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
-  
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  console.log('Pending Restaurants:', pendingRestaurants); // 👈 Add this
 
   const approveRestaurant = async (id) => {
     try {
