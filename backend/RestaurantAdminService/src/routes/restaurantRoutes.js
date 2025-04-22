@@ -12,4 +12,11 @@ router.post('/', restaurantController.registerRestaurant);
 // @access  Public (or make it private if needed)
 router.get('/', restaurantController.getRestaurants);
 
+// Approve a restaurant
+router.put('/:id/approve', restaurantController.approveRestaurant);
+
+// Reject a restaurant
+router.put('/:id/reject', restaurantController.rejectRestaurant);
+
+
 module.exports = router;

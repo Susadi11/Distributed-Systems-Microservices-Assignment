@@ -27,8 +27,6 @@ const RestaurantVerification = () => {
       const res = await axios.get('http://localhost:5000/api/admin/proxy/restaurants'); 
   
       console.log('Full API response:', res.data); // Debugging
-      
-      // Transform the data to match your UI expectations
       const transformRestaurant = (restaurant) => ({
         _id: restaurant._id,
         name: restaurant.storeName,
@@ -39,7 +37,10 @@ const RestaurantVerification = () => {
         address: `${restaurant.address.street}, ${restaurant.address.city}, ${restaurant.address.country}`,
         status: restaurant.status,
         submittedDate: restaurant.registrationDate || restaurant.createdAt,
-        // Add other fields as needed
+        verifiedDate: restaurant.verifiedDate,
+        rejectedDate: restaurant.rejectedDate,
+        rejectionReason: restaurant.rejectionReason,
+        documents: restaurant.documents || [],
       });
   
       setPendingRestaurants(res.data.data.pending.map(transformRestaurant) || []);
@@ -61,30 +62,41 @@ const RestaurantVerification = () => {
 
   const approveRestaurant = async (id) => {
     try {
-      const res = await axios.put(`/api/restaurants/${id}/approve`);
-      setVerifiedRestaurants(prev => [...prev, res.data]);
-      setPendingRestaurants(prev => prev.filter(r => r._id !== id));
+      const res = await axios.put(`http://localhost:5000/api/admin/proxy/restaurants/${id}/approve`);
+      setVerifiedRestaurants((prev) => [
+        ...prev,
+        { ...res.data, status: 'approved' },
+      ]);
+      setPendingRestaurants((prev) =>
+        prev.filter((restaurant) => restaurant._id !== id)
+      );
       setSelectedRestaurant(null);
     } catch (err) {
       console.error('Failed to approve restaurant', err);
     }
   };
-
+  
   const rejectRestaurant = async (id) => {
     if (!rejectionReason.trim()) return;
     try {
-      const res = await axios.put(`/api/restaurants/${id}/reject`, {
-        rejectionReason
+      const res = await axios.put(`http://localhost:5000/api/admin/proxy/restaurants/${id}/reject`, {
+        rejectionReason,
       });
-      setRejectedRestaurants(prev => [...prev, res.data]);
-      setPendingRestaurants(prev => prev.filter(r => r._id !== id));
+      setRejectedRestaurants((prev) => [
+        ...prev,
+        { ...res.data, status: 'rejected' },
+      ]);
+      setPendingRestaurants((prev) =>
+        prev.filter((restaurant) => restaurant._id !== id)
+      );
       setSelectedRestaurant(null);
       setRejectionReason('');
     } catch (err) {
       console.error('Failed to reject restaurant', err);
     }
   };
-
+  
+  
   const getListByViewMode = () => {
     if (viewMode === 'pending') return pendingRestaurants;
     if (viewMode === 'verified') return verifiedRestaurants;

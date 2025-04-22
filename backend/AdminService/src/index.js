@@ -5,11 +5,12 @@ const cors = require('cors');
 const bodyParser = require('body-parser');  
 
 const app = express();
-const PORT = process.env.PORT || 5555;
+const PORT = process.env.PORT || 5551 ;
 const MONGOURI = process.env.MONGOURI;
 
 // Use cors middleware
 app.use(cors());
+app.use(express.json());
 
 mongoose
     .connect(MONGOURI)

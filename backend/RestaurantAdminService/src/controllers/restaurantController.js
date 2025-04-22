@@ -126,5 +126,37 @@ exports.getRestaurants = async (req, res) => {
   }
 };
 
+// Approve restaurant
+exports.approveRestaurant = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findByIdAndUpdate(
+      req.params.id,
+      { status: 'verified' },
+      { new: true }
+    );
+    if (!restaurant) return res.status(404).json({ msg: 'Restaurant not found' });
+    res.json(restaurant);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Reject restaurant
+exports.rejectRestaurant = async (req, res) => {
+  try {
+    const { rejectionReason } = req.body;
+    const restaurant = await Restaurant.findByIdAndUpdate(
+      req.params.id,
+      { status: 'rejected', rejectionReason },
+      { new: true }
+    );
+    if (!restaurant) return res.status(404).json({ msg: 'Restaurant not found' });
+    res.json(restaurant);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
 
 // Add more controller methods as needed...
