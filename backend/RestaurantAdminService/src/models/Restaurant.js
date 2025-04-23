@@ -82,13 +82,6 @@ const restaurantSchema = new mongoose.Schema({
       }
     }
   },
-  // password: {
-  //   type: String,
-  //   required: [true, 'Password is required'],
-  //   minlength: [6, 'Password must be at least 6 characters'],
-  //   select: false
-  // },
-
   registrationDate: {
     type: Date,
     default: Date.now
@@ -149,21 +142,7 @@ const restaurantSchema = new mongoose.Schema({
  
 }, { timestamps: true });
 
-// // Hash password before saving
-// restaurantSchema.pre('save', async function (next) {
-//     if (!this.isModified('password')) return next();
-//     const salt = await bcrypt.genSalt(10);
-//     this.password = await bcrypt.hash(this.password, salt);
-//     next();
-//   });
-  
-//   // Optional: method to compare password during login
-//   restaurantSchema.methods.comparePassword = function (enteredPassword) {
-//     return bcrypt.compare(enteredPassword, this.password);
-//   };
-  
 
-// Add text index for search functionality
 restaurantSchema.index({
   'storeName': 'text',
   'brandName': 'text',

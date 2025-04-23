@@ -3,10 +3,6 @@ const path = require('path'); // Add this line to import the path module
 
 exports.createProduct = async (req, res) => {
   try {
-    // console.log('Received files:', req.files); // Debug files
-    // console.log('Received body:', req.body); // Debug form data
-    
-    // Process uploaded images and create file paths for database
     let imagePaths = [];
     if (req.files && req.files.length > 0) {
       imagePaths = req.files.map(file => {

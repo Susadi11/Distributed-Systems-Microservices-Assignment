@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Registration = () => {
@@ -17,10 +17,12 @@ const Registration = () => {
     state: '',
     postalCode: '',
     email: '',
-    // password: '',            
-    // confirmPassword: '',
     termsAccepted: false
   });
+
+  // Add state for image file
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const [userId, setUserId] = useState(null);
   const [countryCode, setCountryCode] = useState('+94');
@@ -93,6 +95,21 @@ const Registration = () => {
     }));
   };
 
+  // Handle image file selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      
+      // Create preview URL for the selected image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -105,41 +122,39 @@ const Registration = () => {
       return;
     }
 
-    // // Password validation
-    // if (formData.password !== formData.confirmPassword) {
-    //   setError("Passwords do not match");
-    //   setIsSubmitting(false);
-    //   return;
-    // }
-  
     try {
-      const payload = {
-        storeName: formData.storeName,
-        brandName: formData.brandName,
-        businessType: formData.businessType,
-        streetAddress: formData.storeAddress,
-        floorSuite: formData.floorSuite,
-        city: formData.city,
-        state: formData.state,
-        postalCode: formData.postalCode,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber,
-        email: formData.email,
-        // password: formData.password,
-        // confirmPassword: formData.confirmPassword,
-        termsAccepted: formData.termsAccepted,
-        countryCode: countryCode,
-        userId: userId // Include the user ID from token
-      };
+      // Create FormData object for multipart/form-data submission
+      const formDataToSend = new FormData();
+      
+      // Add text fields
+      formDataToSend.append('storeName', formData.storeName);
+      formDataToSend.append('brandName', formData.brandName);
+      formDataToSend.append('businessType', formData.businessType);
+      formDataToSend.append('streetAddress', formData.storeAddress);
+      formDataToSend.append('floorSuite', formData.floorSuite);
+      formDataToSend.append('city', formData.city);
+      formDataToSend.append('state', formData.state);
+      formDataToSend.append('postalCode', formData.postalCode);
+      formDataToSend.append('firstName', formData.firstName);
+      formDataToSend.append('lastName', formData.lastName);
+      formDataToSend.append('phoneNumber', formData.phoneNumber);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('termsAccepted', formData.termsAccepted);
+      formDataToSend.append('countryCode', countryCode);
+      formDataToSend.append('userId', userId);
+      
+      // Add image file if selected
+      if (profileImage) {
+        formDataToSend.append('profileImage', profileImage);
+      }
   
       const response = await fetch('http://localhost:5556/api/restaurants', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` // Include auth token
+          // Don't set Content-Type header when using FormData - it will be set automatically with boundary
         },
-        body: JSON.stringify(payload)
+        body: formDataToSend
       });
   
       if (!response.ok) {
@@ -163,10 +178,12 @@ const Registration = () => {
         state: '',
         postalCode: '',
         email: '',
-        // password: '',            
-        // confirmPassword: '',
         termsAccepted: false
       });
+      
+      // Reset image state
+      setProfileImage(null);
+      setImagePreview(null);
       
     } catch (err) {
       console.error('Registration error:', err);
@@ -187,9 +204,9 @@ const Registration = () => {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Waiting for Approvel!</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Waiting for Approval!</h2>
           <p className="text-gray-600 mb-6">
-            Thank you for registering your restaurant. We'll review your application and give to access soon.
+            Thank you for registering your restaurant. We'll review your application and give you access soon.
           </p>
           <div className="space-y-3">
             <button
@@ -258,6 +275,69 @@ const Registration = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Restaurant Profile Image */}
+            <div>
+              <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-1">
+                Restaurant Profile Image
+              </label>
+              <div className="mt-1 flex items-center">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Restaurant preview" 
+                      className="w-24 h-24 rounded-lg object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileImage(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-colors cursor-pointer"
+                       onClick={() => document.getElementById('profileImage').click()}>
+                    <Upload className="h-6 w-6 mb-1" />
+                    <span className="text-xs">Upload</span>
+                  </div>
+                )}
+                <input
+                  id="profileImage"
+                  name="profileImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <div className="ml-4 flex-1">
+                  <div className="text-sm text-gray-500">
+                    {!imagePreview ? (
+                      <>
+                        <p>Upload a restaurant logo or storefront image</p>
+                        <p className="mt-1">JPG, PNG or GIF up to 5MB</p>
+                      </>
+                    ) : (
+                      <p>Image selected: {profileImage?.name}</p>
+                    )}
+                  </div>
+                  {!imagePreview && (
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('profileImage').click()}
+                      className="mt-2 px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50"
+                    >
+                      Select File
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="storeAddress" className="block text-sm font-medium text-gray-700 mb-1">
                 Store address
@@ -442,38 +522,6 @@ const Registration = () => {
                 required
               />
             </div>
-            {/* <div className="flex flex-row gap-4">  Flex container for horizontal layout 
-  <div className="flex-1">  Takes equal width 
-    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-      Password
-    </label>
-    <input
-      type="password"
-      id="password"
-      name="password"
-      value={formData.password}
-      onChange={handleChange}
-      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      placeholder="Enter a secure password"
-      required
-    />
-  </div>
-  <div className="flex-1">  Takes equal width 
-    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-      Confirm Password
-    </label>
-    <input
-      type="password"
-      id="confirmPassword"
-      name="confirmPassword"
-      value={formData.confirmPassword}
-      onChange={handleChange}
-      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      placeholder="Re-enter your password"
-      required
-    />
-  </div>
-</div> */}
 
             <div>
               <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">

@@ -21,17 +21,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/public/restaurant', express.static(path.join(__dirname, 'public/restaurant')));
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads/restaurants');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 // Routes
 app.use('/api/products', productRoutes);
 app.use('/api/restaurants', restaurantRoutes);
+
 
 
 // Error handling

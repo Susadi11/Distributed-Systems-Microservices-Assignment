@@ -4,53 +4,58 @@ const router = express.Router();
 const restaurantController = require('../controllers/restaurantController');
 const multer = require('multer');
 const path = require('path');
-const authMiddleware = require('../../../AuthService/src/middleware/authMiddleware');
+const fs = require('fs');
 
-// // Set up multer for file uploads
-// const storage = multer.diskStorage({
-//   destination: function(_req, _file, cb) {
-//     cb(null, 'uploads/restaurants/'); // Make sure this directory exists
-//   },
-//   filename: function(req, file, cb) {
-//     // Use user ID from auth token instead of restaurantId from params
-//     cb(null, `restaurant-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
-//   }
-// });
+// Set up storage configuration for restaurant profile images
+const storage = multer.diskStorage({
+  destination: function(_req, _file, cb) {
+    const uploadDir = 'uploads/restaurants';
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: function(_req, file, cb) {
+    // Create unique filename with timestamp and original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'restaurant-' + uniqueSuffix + ext);
+  }
+});
 
-// const fileFilter = (_req, file, cb) => {
-//   if (file.mimetype.startsWith('image/')) {
-//     cb(null, true);
-//   } else {
-//     cb(new Error('Only image files are allowed!'), false);
-//   }
-// };
+// File filter to accept only images
+const fileFilter = (_req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not an image! Please upload only images.'), false);
+  }
+};
 
-// const upload = multer({
-//   storage,
-//   fileFilter,
-//   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-// });
+// Initialize multer with our configuration
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // limit to 5MB
+  },
+  fileFilter: fileFilter
+});
 
-// // Allowed roles for restaurant operations
-// const restaurantAccess = ['restaurant_owner', 'admin', 'restaurant_admin'];
 
-// router.patch('/profile', authMiddleware(restaurantAccess), upload.single('profileImage'),
-//   restaurantController.createRestaurantProfile
-// );
 
-// // Get restaurant profile
-// router.get(
-//   '/profile',
-//   authMiddleware(restaurantAccess),
-//   restaurantController.getRestaurantProfile
-// );
+router.post('/', upload.single('profileImage'),restaurantController.registerRestaurant);
 
-// Restaurant registration
-router.post('/', restaurantController.registerRestaurant);
 
-// Get all restaurants (consider adding auth/pagination)
-router.get('/', restaurantController.getRestaurants);
+
+router.get('/user/:userId', restaurantController.getRestaurantByUserId);
+
+router.put('/:id',restaurantController.updateRestaurant);
 
 console.log('Restaurant routes loaded');
+
+
 
 module.exports = router;
