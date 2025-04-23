@@ -20,6 +20,11 @@ const productSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid image path!`
     }
   }],
+  user:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:'User',
+    required:true
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

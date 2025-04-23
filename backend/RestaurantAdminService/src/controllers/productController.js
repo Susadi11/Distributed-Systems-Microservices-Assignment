@@ -20,7 +20,8 @@ exports.createProduct = async (req, res) => {
       description: req.body.description || '',
       status: req.body.status || 'available',
       discount: req.body.discount === 'true' || req.body.discount === true,
-      images: imagePaths
+      images: imagePaths,
+      user: req.body.userId // Assuming userId is passed in the request body
     });
     
     const savedProduct = await product.save();

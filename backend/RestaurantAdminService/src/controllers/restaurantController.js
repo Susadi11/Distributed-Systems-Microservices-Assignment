@@ -274,3 +274,46 @@ exports.rejectRestaurant = async (req, res) => {
   }
 };
 
+exports.getRestaurants = async (req, res) => {
+  try {
+    const pending = await Restaurant.find({ status: 'pending' });
+    const verified = await Restaurant.find({ status: 'verified' });
+    const rejected = await Restaurant.find({ status: 'rejected' });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        pending,
+        verified,
+        rejected
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching restaurants by status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching restaurants'
+    });
+  }
+};
+
+const getRestaurantStatus = async (req, res) => {
+  try {
+    const restaurantId = req.params.id;
+    const restaurant = await Restaurant.findById(restaurantId);
+
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+
+    return res.status(200).json({ status: restaurant.status }); // e.g., 'pending' or 'approved'
+  } catch (error) {
+    console.error('Error fetching restaurant status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = {
+  getRestaurantStatus,
+};
+
