@@ -9,7 +9,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-import MenuCatalog from "./pages/MenuCatalog";
+
 import MenuList from "./pages/MenuList";
 import AddProduct from "./pages/AddProduct";
 import Registration from "./pages/Registration";
@@ -37,15 +37,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
-         {/*Menu-related pages with role protection */}
-         <Route
-          path="/menu/catalog"
-          element={
-            <PrivateRoute allowedRoles={['resturant_admin']}>
-              <MenuCatalog />
-            </PrivateRoute>
-          }
-        />
+        
         <Route
           path="/menu/list"
           element={

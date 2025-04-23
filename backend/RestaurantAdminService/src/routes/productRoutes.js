@@ -15,16 +15,21 @@ if (!fs.existsSync(uploadDir)) {
 
 // Correct multer storage configuration
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
+   destination: function(_req, _file, cb) {
+      const uploadDir = 'uploads/products';
+      
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      cb(null, uploadDir);
   },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const sanitizedName = file.originalname
-      .replace(ext, '')
-      .replace(/[^a-zA-Z0-9]/g, '-')
-      .toLowerCase();
-    cb(null, `${sanitizedName}-${uuidv4()}${ext}`);
+  filename: function(_req, file, cb) {
+      // Create unique filename with timestamp and original extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'product-' + uniqueSuffix + ext)
   }
 });
 

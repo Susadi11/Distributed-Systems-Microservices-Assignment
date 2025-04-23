@@ -3,7 +3,7 @@ import { ShoppingCart, CheckCircle, Clock, Edit, Trash } from 'lucide-react';
 import Sidebar from '../components/utility/Sidebar';
 import DashboardNavBar from '../components/utility/DashboardNavBar';
 
-const ProductsList = () => {
+const MenuList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -451,4 +451,4 @@ const ProductsList = () => {
   );
 };
 
-export default ProductsList;
+export default MenuList;
