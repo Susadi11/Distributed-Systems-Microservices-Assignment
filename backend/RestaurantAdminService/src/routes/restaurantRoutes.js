@@ -53,7 +53,7 @@ router.get('/', restaurantController.getRestaurants);
 
 
 router.get('/user/:userId', restaurantController.getRestaurantByUserId);
-router.get('/restaurants/:id/status',restaurantController.getRestaurantStatus);
+
 
 router.put('/:id',restaurantController.updateRestaurant);
 

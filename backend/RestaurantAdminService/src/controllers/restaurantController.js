@@ -297,23 +297,3 @@ exports.getRestaurants = async (req, res) => {
   }
 };
 
-const getRestaurantStatus = async (req, res) => {
-  try {
-    const restaurantId = req.params.id;
-    const restaurant = await Restaurant.findById(restaurantId);
-
-    if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant not found' });
-    }
-
-    return res.status(200).json({ status: restaurant.status }); // e.g., 'pending' or 'approved'
-  } catch (error) {
-    console.error('Error fetching restaurant status:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-module.exports = {
-  getRestaurantStatus,
-};
-
