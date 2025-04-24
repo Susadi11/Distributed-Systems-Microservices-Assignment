@@ -9,12 +9,22 @@ const router = express.Router();
 // Register Route
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role, longitude, latitude, address, phone } = req.body;
+    const { name, email, password, role, address, phone, deliveryPersonnelDetails } = req.body;
     console.log("Registration attempt:", { name, email, role });
 
     // Validate input
     if (!name || !email || !password || !address || !phone) {
       return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // If role is delivery_personnel, validate deliveryPersonnelDetails fields
+    if (role === "delivery_personnel") {
+      const requiredFields = ["vehicleType", "vehicleNumber", "Make", "Model", "year", "DriverLicense", "longitude", "latitude"];
+      for (const field of requiredFields) {
+        if (!deliveryPersonnelDetails || !deliveryPersonnelDetails[field]) {
+          return res.status(400).json({ error: `Field ${field} is required for delivery personnel` });
+        }
+      }
     }
 
     // Check if user already exists
@@ -26,17 +36,23 @@ router.post("/register", async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const newUser = await User.create({
+    // Create user object
+    const userData = {
       name,
       email,
       password: hashedPassword,
       role: role || "customer",
-      longitude,
-      latitude,
       address,
-      phone,
-    });
+      phone
+    };
+
+    // Add deliveryPersonnelDetails if role is delivery_personnel
+    if (role === "delivery_personnel") {
+      userData.deliveryPersonnelDetails = deliveryPersonnelDetails;
+    }
+
+    // Create user
+    const newUser = await User.create(userData);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -54,8 +70,6 @@ router.post("/register", async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
-        longitude: newUser.longitude,
-        latitude: newUser.latitude,
         address: newUser.address,
         phone: newUser.phone
       }
@@ -69,6 +83,7 @@ router.post("/register", async (req, res) => {
     });
   }
 });
+
 
 // Login Route
 router.post("/login", async (req, res) => {
