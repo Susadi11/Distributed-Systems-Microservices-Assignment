@@ -32,7 +32,7 @@ function Header() {
   };
 
   return (
-    <header className="bg-white shadow-md px-6 py-3 rounded-b-xl">
+    <header className="fixed top-0 left-4 right-4 z-50 bg-white/80 backdrop-blur-md shadow-md rounded-xl px-6 py-3">
       <div className="flex justify-between items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
@@ -40,17 +40,9 @@ function Header() {
           <span className="text-xl font-bold text-gray-700">FoodAdmin</span>
         </Link>
 
-        {/* Search + Icons */}
+        {/* Right Section */}
         <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <input
-              className="pl-10 pr-4 py-2 w-72 bg-gray-100 rounded-lg text-sm text-gray-700 placeholder-gray-400 border border-gray-200 focus:ring-2 focus:ring-indigo-300 focus:outline-none"
-              placeholder="Search here..."
-              type="search"
-            />
-            <span className="material-icons absolute left-3 top-2.5 text-gray-400 text-base">search</span>
-          </div>
+         
 
           {/* Notifications */}
           <div className="relative">
@@ -63,7 +55,7 @@ function Header() {
             </button>
 
             {isNotificationsOpen && (
-              <div className="absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-lg z-50 overflow-hidden animate-fadeIn">
                 <div className="px-4 py-3 border-b border-gray-100 font-semibold text-gray-700">
                   Notifications
                 </div>
@@ -91,7 +83,7 @@ function Header() {
           <div className="relative">
             <button
               onClick={toggleDropdown}
-              className="rounded-full border-2 border-white shadow-sm focus:outline-none hover:ring-2 hover:ring-indigo-300"
+              className="rounded-full border-2 border-white shadow-sm focus:outline-none hover:ring-2 hover:ring-indigo-300 transition"
             >
               <img
                 className="h-9 w-9 rounded-full object-cover"
@@ -101,7 +93,7 @@ function Header() {
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-lg z-50 overflow-hidden animate-fadeIn">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-sm font-semibold text-gray-800">John Smith</p>
                   <p className="text-xs text-gray-500">admin@example.com</p>
@@ -114,7 +106,13 @@ function Header() {
                     <span className="material-icons text-base mr-2">settings</span>
                     Account Settings
                   </Link>
-                  <button className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("isAdmin");
+                      window.location.href = "/admin/login";
+                    }}
+                    className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
                     <span className="material-icons text-base mr-2">logout</span>
                     Sign out
                   </button>

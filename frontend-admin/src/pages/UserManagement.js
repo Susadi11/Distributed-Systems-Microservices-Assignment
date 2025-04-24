@@ -72,7 +72,7 @@ function UserManagement() {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8">
+    <div className="space-y-8 h-full flex flex-col">
       <div>
         <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
         <p className="text-gray-500">

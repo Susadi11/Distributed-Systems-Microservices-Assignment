@@ -107,7 +107,7 @@ const RestaurantVerification = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">Restaurant Verification</h2>
+        <h2 className="text-3xl font-bold">Restaurant Verification</h2>
         <p className="text-gray-600">Verify restaurant applications before they can join the platform</p>
       </div>
 

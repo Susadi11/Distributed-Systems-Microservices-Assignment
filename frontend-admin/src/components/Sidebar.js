@@ -31,7 +31,7 @@ function Sidebar() {
         <div className="h-12 w-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mr-3 shadow-lg">
           <span className="material-icons text-white text-2xl">restaurant</span>
         </div>
-        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text tracking-tight">
+        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-indigo-600 to-blue-800 text-transparent bg-clip-text tracking-tight">
           FoodAdmin
         </h1>
       </div>

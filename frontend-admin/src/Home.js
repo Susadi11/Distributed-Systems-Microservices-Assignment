@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import axios from "axios";
 import { useEffect, useState } from "react";
+// import Header from './components/Header';
 
 // Sample chart data
 const revenueData = [
@@ -46,8 +47,10 @@ function Home() {
   }, []);
 
   return (
+   
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+       {/* <Header/> */}
+      <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
       
       {/* Stats Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -78,13 +81,7 @@ function Home() {
       </div>
       
       {/* Welcome Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Welcome to FoodAdmin</h2>
-        <p className="text-gray-600">
-          Manage your restaurant platform efficiently with our admin dashboard. 
-          You can verify new restaurants, manage users, view analytics, and more.
-        </p>
-      </div>
+     
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
