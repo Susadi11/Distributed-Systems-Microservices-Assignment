@@ -262,22 +262,7 @@ const RestaurantVerification = () => {
 
                   {selectedRestaurant.status === 'pending' && (
                     <>
-                      {selectedRestaurant.documents && (
-                        <div className="mt-8">
-                          <h4 className="font-medium text-gray-500 mb-2">Documents</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {selectedRestaurant.documents.map((doc, index) => (
-                              <div key={index} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                                <p className="text-sm font-medium">{doc}</p>
-                                <div className="mt-2 flex space-x-2">
-                                  <button className="text-xs text-blue-600 hover:text-blue-800">View</button>
-                                  <button className="text-xs text-blue-600 hover:text-blue-800">Download</button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                  
 
                       <div className="mt-8 border-t pt-6">
                         <h4 className="font-medium text-gray-500 mb-4">Verification Decision</h4>

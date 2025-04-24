@@ -13,6 +13,8 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 // Sample chart data
 const revenueData = [
@@ -23,15 +25,26 @@ const revenueData = [
   { name: "May", revenue: 6900 },
 ];
 
-const userDistribution = [
-  { name: "Admins", value: 8 },
-  { name: "Moderators", value: 12 },
-  { name: "Users", value: 280 },
-];
+
 
 const COLORS = ["#6366F1", "#06B6D4", "#10B981"];
 
 function Home() {
+  const [userDistribution, setUserDistribution] = useState([]);
+
+  useEffect(() => {
+    const fetchUserRoles = async () => {
+      try {
+        const res = await axios.get("http://localhost:5555/auth/user-role-distribution");
+        setUserDistribution(res.data);
+      } catch (error) {
+        console.error("Failed to fetch user role distribution:", error);
+      }
+    };
+
+    fetchUserRoles();
+  }, []);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
@@ -51,7 +64,7 @@ function Home() {
           color="yellow"
         />
         <StatsCard 
-          title="Active Users" 
+          title="Total Users" 
           value="2,843" 
           icon={<span className="material-icons">people</span>}
           color="green"
@@ -98,7 +111,7 @@ function Home() {
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">User Role Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+           <PieChart>
               <Pie
                 data={userDistribution}
                 cx="50%"

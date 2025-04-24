@@ -157,4 +157,65 @@ router.get("/users", async (req, res) => {
 }
 );
 
+// Update User
+router.put("/users/:id", async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "User updated successfully", user: updatedUser });
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Delete User
+router.delete("/users/:id", async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Delete error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get user role distribution
+router.get("/user-role-distribution", async (req, res) => {
+  try {
+    const roleCounts = await User.aggregate([
+      {
+        $group: {
+          _id: "$role",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const formatted = roleCounts.map((r) => ({
+      name: r._id.charAt(0).toUpperCase() + r._id.slice(1).replace(/_/g, " "),
+      value: r.count,
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error("Error fetching user role distribution:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 module.exports = router;
