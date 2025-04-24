@@ -1,20 +1,50 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AdminDashboard from './pages/AdminDashboard';
 import RestaurantVerification from './pages/RestaurantVerification';
 import UserManagement from './pages/UserManagement';
 import Analytics from './pages/Analytics';
 import Home from './Home';
+import AdminLogin from './pages/AdminLogin';
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    localStorage.getItem('isAdmin') === 'true'
+  );
+
+  const location = useLocation();
+
+  // Sync state with localStorage changes (e.g., on login/logout)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsLoggedIn(localStorage.getItem('isAdmin') === 'true');
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Recheck on location change (for internal navigation)
+  useEffect(() => {
+    setIsLoggedIn(localStorage.getItem('isAdmin') === 'true');
+  }, [location]);
+
   return (
     <Routes>
-      {/* Redirect root path to /admin/dashboard */}
-      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+      {/* Root route based on login */}
+      <Route
+        path="/"
+        element={<Navigate to={isLoggedIn ? "/admin/dashboard" : "/admin/login"} replace />}
+      />
 
-      {/* Admin dashboard routes with layout wrapper */}
-      <Route path="/admin" element={<AdminDashboard />}>
-        {/* Default admin route */}
+      {/* Login route */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+
+      {/* Protected routes */}
+      <Route
+        path="/admin"
+        element={isLoggedIn ? <AdminDashboard /> : <Navigate to="/admin/login" replace />}
+      >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Home />} />
         <Route path="verify-restaurants" element={<RestaurantVerification />} />
@@ -24,8 +54,8 @@ function App() {
         <Route path="account" element={<div>Account Settings</div>} />
       </Route>
 
-      {/* Catch-all route */}
-      <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

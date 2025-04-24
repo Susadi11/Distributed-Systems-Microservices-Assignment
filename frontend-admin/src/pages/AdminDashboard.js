@@ -1,5 +1,5 @@
-import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import React from "react";
+import { Outlet, NavLink } from "react-router-dom";
 
 const AdminDashboard = () => {
   return (
@@ -14,7 +14,7 @@ const AdminDashboard = () => {
             to="dashboard"
             className={({ isActive }) =>
               `px-4 py-2 rounded-lg hover:bg-blue-100 ${
-                isActive ? 'bg-blue-500 text-white' : 'text-gray-700'
+                isActive ? "bg-blue-500 text-white" : "text-gray-700"
               }`
             }
           >
@@ -24,7 +24,7 @@ const AdminDashboard = () => {
             to="verify-restaurants"
             className={({ isActive }) =>
               `px-4 py-2 rounded-lg hover:bg-blue-100 ${
-                isActive ? 'bg-blue-500 text-white' : 'text-gray-700'
+                isActive ? "bg-blue-500 text-white" : "text-gray-700"
               }`
             }
           >
@@ -34,7 +34,7 @@ const AdminDashboard = () => {
             to="users"
             className={({ isActive }) =>
               `px-4 py-2 rounded-lg hover:bg-blue-100 ${
-                isActive ? 'bg-blue-500 text-white' : 'text-gray-700'
+                isActive ? "bg-blue-500 text-white" : "text-gray-700"
               }`
             }
           >
@@ -44,13 +44,22 @@ const AdminDashboard = () => {
             to="analytics"
             className={({ isActive }) =>
               `px-4 py-2 rounded-lg hover:bg-blue-100 ${
-                isActive ? 'bg-blue-500 text-white' : 'text-gray-700'
+                isActive ? "bg-blue-500 text-white" : "text-gray-700"
               }`
             }
           >
             Analytics
           </NavLink>
         </nav>
+        <button
+          onClick={() => {
+            localStorage.removeItem("isAdmin");
+            window.location.href = "/admin/login"; // force logout
+          }}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Logout
+        </button>
       </aside>
 
       {/* Main content */}
