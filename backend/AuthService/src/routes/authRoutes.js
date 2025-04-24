@@ -217,5 +217,29 @@ router.get("/user-role-distribution", async (req, res) => {
   }
 });
 
+// Update user address
+router.put('/update-address', authMiddleware(), async (req, res) => {
+  try {
+    const { address } = req.body;
+
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+        req.user.id,
+        { address },
+        { new: true }
+    ).select('-password');
+
+    res.json({
+      message: "Address updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error("Error updating address:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 module.exports = router;
