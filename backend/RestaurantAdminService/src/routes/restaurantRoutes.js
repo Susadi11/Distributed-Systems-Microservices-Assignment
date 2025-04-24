@@ -65,6 +65,7 @@ router.put('/:id/reject', restaurantController.rejectRestaurant);
 
 console.log('Restaurant routes loaded');
 
-
+//user side display approved restaurants
+router.get('/verified', restaurantController.getVerifiedRestaurants);
 
 module.exports = router;
