@@ -241,6 +241,32 @@ exports.updateRestaurant = async (req, res) => {
   }
 };
 
+exports.getRestaurants = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    // Always filter by status (default to approved if not specified)
+    const filter = status ? { status } : { status: 'approved' };
+
+    const restaurants = await Restaurant.find(filter)
+        .select('-password -__v')
+        .lean();
+
+    res.status(200).json({
+      success: true,
+      count: restaurants.length,
+      data: restaurants // Return a flat array
+    });
+  } catch (error) {
+    console.error('Error fetching restaurants:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching restaurants',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 // Approve restaurant
 exports.approveRestaurant = async (req, res) => {
   try {
@@ -297,3 +323,23 @@ exports.getRestaurants = async (req, res) => {
   }
 };
 
+//user side display verified restaurants
+exports.getVerifiedRestaurants = async (req, res) => {
+  try {
+    const verified = await Restaurant.find({ status: 'verified' })
+        .select('-__v -password')
+        .lean();
+
+    res.status(200).json({
+      success: true,
+      count: verified.length,
+      data: verified
+    });
+  } catch (error) {
+    console.error('Error fetching verified restaurants:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching verified restaurants'
+    });
+  }
+};
