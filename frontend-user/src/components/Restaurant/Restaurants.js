@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Star, Clock, Search, ChevronDown, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import res1 from '../../images/res1.jpeg';
-import res2 from '../../images/res2.jpeg';
-import res3 from '../../images/res3.jpeg';
+import axios from 'axios';
 
 const Restaurants = () => {
     const navigate = useNavigate();
@@ -14,69 +12,53 @@ const Restaurants = () => {
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState(null);
+    const [restaurants, setRestaurants] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const restaurantCategories = ['Chinese', 'Italian', 'Cafe', 'Fast Food', 'Bakery'];
+    const restaurantCategories = ['Restaurant', 'Cafe', 'Bakery', 'Food Truck', 'Grocery Store', 'Other Food Business'];
 
-    const restaurants = [
-        {
-            id: 1,
-            name: 'Dragon Wok Palace',
-            category: 'Chinese',
-            rating: 4.7,
-            distance: '2.3 km',
-            openTime: '11:00 AM - 10:00 PM',
-            image: res1,
-            specialties: ['Dim Sum', 'Fried Rice', 'Noodles'],
-            isOpen: true,
-            tags: ['Dine-in', 'Takeaway', 'Delivery'],
-            deliveryTime: '25-35 min'
-        },
-        {
-            id: 2,
-            name: 'Cafe Bella Vista',
-            category: 'Cafe',
-            rating: 4.5,
-            distance: '1.5 km',
-            openTime: '7:00 AM - 9:00 PM',
-            image: res2,
-            specialties: ['Espresso', 'Pastries', 'Sandwiches'],
-            isOpen: true,
-            tags: ['Coffee', 'Breakfast', 'Brunch'],
-            deliveryTime: '15-25 min'
-        },
-        {
-            id: 3,
-            name: 'Pizzeria Napoli',
-            category: 'Italian',
-            rating: 4.8,
-            distance: '3.2 km',
-            openTime: '12:00 PM - 11:00 PM',
-            image: res3,
-            specialties: ['Wood Fired Pizza', 'Pasta', 'Risotto'],
-            isOpen: false,
-            tags: ['Dine-in', 'Takeaway'],
-            deliveryTime: '30-45 min'
-        },
-        {
-            id: 4,
-            name: 'Green Leaf Salad Bar',
-            category: 'Fast Food',
-            rating: 4.6,
-            distance: '1.8 km',
-            openTime: '10:00 AM - 9:00 PM',
-            image: res1, // Reusing res1 as placeholder
-            specialties: ['Healthy Bowls', 'Smoothies', 'Wraps'],
-            isOpen: true,
-            tags: ['Healthy', 'Vegan Options'],
-            deliveryTime: '20-30 min'
-        }
-    ];
+    useEffect(() => {
+        const fetchRestaurants = async () => {
+            try {
+                // Update this URL to match your actual backend service
+                // (using the RESTAURANT_ADMIN_SERVICE_URL from your backend code)
+                const response = await axios.get('http://localhost:5556/api/restaurants/verified');
+
+                if (response.data.success) {
+                    // Transform the categorized data into a flat array
+                    let allRestaurants = [];
+
+                    // Check if response is already categorized
+                    if (response.data.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+                        allRestaurants = Object.values(response.data.data).flat();
+                    } else if (Array.isArray(response.data.data)) {
+                        allRestaurants = response.data.data;
+                    }
+
+                    setRestaurants(allRestaurants);
+                } else {
+                    setError('Failed to fetch restaurants');
+                }
+            } catch (err) {
+                console.error('Error fetching restaurants:', err);
+                setError(err.message || 'Failed to fetch restaurants');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRestaurants();
+    }, []);
 
     const filteredRestaurants = restaurants.filter(restaurant => {
-        const matchesSearch = restaurant.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = !filters.category || restaurant.category === filters.category;
-        const matchesRating = !filters.minRating || restaurant.rating >= filters.minRating;
-        const matchesOpenStatus = !filters.openNow || restaurant.isOpen;
+        const matchesSearch = restaurant.storeName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = !filters.category || restaurant.businessType === filters.category;
+        // Assuming restaurants might not have ratings
+        const rating = restaurant.rating || 0;
+        const matchesRating = !filters.minRating || rating >= filters.minRating;
+        // Use isOpenNow from the schema instead of isOpen
+        const matchesOpenStatus = !filters.openNow || restaurant.isOpenNow;
 
         return matchesSearch && matchesCategory && matchesRating && matchesOpenStatus;
     });
@@ -91,49 +73,55 @@ const Restaurants = () => {
     );
 
     const handleRestaurantClick = (restaurantId) => {
-        navigate(`/menu`);
+        navigate(`/menu/${restaurantId}`);
     };
 
     const renderRestaurantCard = (restaurant) => (
         <div
-            key={restaurant.id}
+            key={restaurant._id}
             className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
-            onClick={() => handleRestaurantClick(restaurant.id)}
+            onClick={() => handleRestaurantClick(restaurant._id)}
         >
             <div className="relative h-48">
-                <img
-                    src={restaurant.image}
-                    alt={restaurant.name}
-                    className="w-full h-full object-cover"
-                />
+                {restaurant.profileImage && restaurant.profileImage.length > 0 ? (
+                    <img
+                        src={`http://localhost:5556${restaurant.profileImage[0]}`}
+                        alt={restaurant.storeName}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500">No Image</span>
+                    </div>
+                )}
                 <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-medium ${
-                    restaurant.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    restaurant.isOpenNow ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
-                    {restaurant.isOpen ? 'Open' : 'Closed'}
+                    {restaurant.isOpenNow ? 'Open' : 'Closed'}
                 </div>
             </div>
 
             <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{restaurant.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{restaurant.storeName}</h3>
                     <div className="flex items-center bg-gray-100 px-2 py-1 rounded-full">
                         <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 mr-1" />
-                        <span className="text-sm font-medium">{restaurant.rating}</span>
+                        <span className="text-sm font-medium">{restaurant.rating || 'N/A'}</span>
                     </div>
                 </div>
 
                 <div className="flex items-center text-gray-600 text-sm mb-2">
                     <MapPin className="w-4 h-4 mr-1 text-gray-400" />
-                    <span>{restaurant.distance} • {restaurant.category}</span>
+                    <span>{restaurant.address?.city} • {restaurant.businessType}</span>
                 </div>
 
                 <div className="flex items-center text-gray-600 text-sm mb-3">
                     <Clock className="w-4 h-4 mr-1 text-gray-400" />
-                    <span>{restaurant.openTime}</span>
+                    <span>{restaurant.openingHours?.open || '11:00 AM'} - {restaurant.openingHours?.close || '10:00 PM'}</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-3">
-                    {restaurant.tags.map(tag => (
+                    {restaurant.cuisineTypes?.map(tag => (
                         <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                             {tag}
                         </span>
@@ -141,11 +129,42 @@ const Restaurants = () => {
                 </div>
 
                 <div className="text-sm text-gray-500">
-                    Delivery: {restaurant.deliveryTime}
+                    Delivery: 25-35 min
                 </div>
             </div>
         </div>
     );
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading restaurants...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="mx-auto h-12 w-12 text-red-500 mb-4">
+                        <X size={48} className="mx-auto" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">Error loading restaurants</h3>
+                    <p className="text-gray-500">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 text-red-600 hover:text-red-700 font-medium"
+                    >
+                        Try again
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
