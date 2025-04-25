@@ -1,6 +1,9 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+
+const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
 
@@ -8,28 +11,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Stripe setup
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Connect to MongoDB
+mongoose.connect(process.env.MONGOURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected for PaymentService'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
-app.post('/create-payment-intent', async (req, res) => {
-  try {
-    const { amount, currency = 'usd' } = req.body;
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency,
-      automatic_payment_methods: { enabled: true },
-    });
-
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+app.use('/', paymentRoutes);
 
 // Start server
-const PORT = process.env.PORT || 5552 ;
+const PORT = process.env.PORT || 5552;
 app.listen(PORT, () => console.log(`PaymentService running on port ${PORT}`));

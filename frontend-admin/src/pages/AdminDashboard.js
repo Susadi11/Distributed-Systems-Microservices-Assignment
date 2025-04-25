@@ -9,6 +9,7 @@ const navItems = [
   { to: "verify-restaurants", label: "Verify Restaurants", icon: "verified", color: "from-emerald-500 to-teal-500" },
   { to: "users", label: "User Management", icon: "people", color: "from-amber-500 to-orange-500" },
   { to: "analytics", label: "Analytics", icon: "analytics", color: "from-fuchsia-500 to-pink-500" },
+  { to: "transactions", label: "Transactions", icon: "wallet", color: "from-fuchsia-500 to-pink-500" },
 ];
 
 const AdminDashboard = () => {

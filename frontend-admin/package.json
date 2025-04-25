@@ -10,6 +10,8 @@
     "autoprefixer": "^10.4.20",
     "axios": "^1.8.4",
     "framer-motion": "^12.9.1",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.503.0",
     "postcss": "^8.5.1",
     "react": "^19.0.0",

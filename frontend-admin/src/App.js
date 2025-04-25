@@ -6,6 +6,7 @@ import UserManagement from './pages/UserManagement';
 import Analytics from './pages/Analytics';
 import Home from './Home';
 import AdminLogin from './pages/AdminLogin';
+import Transactions from './pages/Transactions';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -49,7 +50,7 @@ function App() {
         <Route path="dashboard" element={<Home />} />
         <Route path="verify-restaurants" element={<RestaurantVerification />} />
         <Route path="users" element={<UserManagement />} />
-        <Route path="transactions" element={<div>Transactions</div>} />
+        <Route path="transactions" element={<Transactions />}/>
         <Route path="analytics" element={<Analytics />} />
         <Route path="account" element={<div>Account Settings</div>} />
       </Route>
