@@ -8,4 +8,7 @@ router.post('/create-payment-intent', paymentController.createPaymentIntent);
 // Route to get all payment intents
 router.get('/payment-intents', paymentController.getAllPaymentIntents);
 
+// Route to get monthly revenue
+router.get('/monthly-revenue', paymentController.getMonthlyRevenue);
+
 module.exports = router;

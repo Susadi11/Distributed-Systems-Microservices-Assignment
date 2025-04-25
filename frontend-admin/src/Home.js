@@ -17,21 +17,12 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 // import Header from './components/Header';
 
-// Sample chart data
-const revenueData = [
-  { name: "Jan", revenue: 4000 },
-  { name: "Feb", revenue: 4600 },
-  { name: "Mar", revenue: 5200 },
-  { name: "Apr", revenue: 6100 },
-  { name: "May", revenue: 6900 },
-];
-
-
 
 const COLORS = ["#6366F1", "#06B6D4", "#10B981"];
 
 function Home() {
   const [userDistribution, setUserDistribution] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
 
   useEffect(() => {
     const fetchUserRoles = async () => {
@@ -43,7 +34,20 @@ function Home() {
       }
     };
 
+        // Fetch monthly revenue data
+        const fetchRevenueData = async () => {
+          try {
+            const res = await axios.get("http://localhost:5552/monthly-revenue");
+            // Assuming the response contains an array like [{ month: 'Jan', revenue: 4000 }, ...]
+            setRevenueData(res.data);
+          } catch (error) {
+            console.error("Failed to fetch revenue data:", error);
+          }
+        };
+
     fetchUserRoles();
+    fetchRevenueData();
+
   }, []);
 
   return (
@@ -83,15 +87,15 @@ function Home() {
       {/* Welcome Section */}
      
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Line Chart */}
+       {/* Charts Section */}
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Line Chart - Revenue Growth */}
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Revenue Growth</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+              <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
               <Line
