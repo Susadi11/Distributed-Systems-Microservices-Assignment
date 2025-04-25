@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+// Small reusable Detail component
+const Detail = ({ label, value }) => (
+  <div className="mb-4">
+    <p className="text-sm text-gray-500">{label}</p>
+    <p className="text-lg font-medium text-gray-800">{value ?? "—"}</p>
+  </div>
+);
+
 function UserManagement() {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState(''); // Role filter state
+  const [roleFilter, setRoleFilter] = useState(""); // Role filter state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [viewedUser, setViewedUser] = useState(null);
   const [editedUser, setEditedUser] = useState({
     name: "",
     email: "",
@@ -98,7 +107,6 @@ function UserManagement() {
           <option value="customer">customer</option>
           <option value="delivery_personnel">delivery_personnel</option>
           <option value="resturant_admin">resturant_admin</option>
-
         </select>
       </div>
 
@@ -118,7 +126,8 @@ function UserManagement() {
             {filteredUsers.map((user, index) => (
               <tr
                 key={user._id}
-                className="border-b border-gray-100 hover:bg-gray-50 transition"
+                className="border-b border-gray-100 hover:bg-indigo-50 transition cursor-pointer"
+                onClick={() => setViewedUser(user)}
               >
                 <td className="px-6 py-4 text-gray-500 font-medium">
                   {index + 1}
@@ -158,6 +167,93 @@ function UserManagement() {
           </tbody>
         </table>
       </div>
+
+      {viewedUser && (
+        <div className="mt-8 p-6 bg-white rounded-xl shadow-lg border border-gray-100 transition-all duration-300">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+            User Details
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Detail label="Name" value={viewedUser.name} />
+            <Detail label="Email" value={viewedUser.email} />
+            <Detail label="Phone" value={viewedUser.phone} />
+            <Detail label="Address" value={viewedUser.address} />
+            
+            <Detail
+              label="Role"
+              value={viewedUser.role}
+              customClass="capitalize bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md inline-block"
+            />
+            <Detail
+              label="Created At"
+              value={new Date(viewedUser.createdAt).toLocaleString()}
+            />
+            <Detail
+              label="Last Updated"
+              value={new Date(viewedUser.updatedAt).toLocaleString()}
+            />
+
+            {viewedUser.role === "delivery_personnel" &&
+              viewedUser.deliveryPersonnelDetails && (
+                <>
+                  <div className="md:col-span-2 mt-6">
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                      Delivery Personnel Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Detail
+                        label="Vehicle Type"
+                        value={viewedUser.deliveryPersonnelDetails.vehicleType}
+                      />
+                      <Detail
+                        label="Vehicle Number"
+                        value={
+                          viewedUser.deliveryPersonnelDetails.vehicleNumber
+                        }
+                      />
+                      <Detail
+                        label="Make"
+                        value={viewedUser.deliveryPersonnelDetails.Make}
+                      />
+                      <Detail
+                        label="Model"
+                        value={viewedUser.deliveryPersonnelDetails.Model}
+                      />
+                      <Detail
+                        label="Year"
+                        value={viewedUser.deliveryPersonnelDetails.year}
+                      />
+                      <Detail
+                        label="Driver License"
+                        value={
+                          viewedUser.deliveryPersonnelDetails.DriverLicense
+                        }
+                      />
+                      <Detail
+                        label="Latitude"
+                        value={viewedUser.deliveryPersonnelDetails.latitude}
+                      />
+                      <Detail
+                        label="Longitude"
+                        value={viewedUser.deliveryPersonnelDetails.longitude}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+          </div>
+
+          <div className="mt-6 text-right">
+            <button
+              onClick={() => setViewedUser(null)}
+              className="px-4 py-2 text-sm bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {isEditModalOpen && (
