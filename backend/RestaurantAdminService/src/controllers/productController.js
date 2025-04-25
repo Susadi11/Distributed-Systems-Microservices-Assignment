@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const path = require('path'); // Add this line to import the path module
+const mongoose = require('mongoose');
 
 exports.createProduct = async (req, res) => {
   try {
@@ -83,5 +84,40 @@ exports.deleteProduct = async (req, res) => {
     res.status(200).json({ message: 'Product deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+//for menu
+exports.getProductsByRestaurant = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+
+    // Validate restaurantId format (optional but recommended)
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid restaurant ID format'
+      });
+    }
+
+    // Find available products for this restaurant
+    const products = await Product.find({
+      restaurant: restaurantId,
+      status: 'available'
+    }).populate('restaurant', 'name'); // Optional: Include basic restaurant info
+
+    res.json({
+      success: true,
+      count: products.length,
+      data: products
+    });
+
+  } catch (err) {
+    console.error('Error fetching restaurant products:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching menu',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };

@@ -71,4 +71,7 @@ router.use((err, _req, res, next) => {
   next();
 });
 
+//for menu
+router.get('/restaurant/:restaurantId', productController.getProductsByRestaurant);
+
 module.exports = router;
