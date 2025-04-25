@@ -21,17 +21,19 @@ const Restaurants = () => {
     useEffect(() => {
         const fetchRestaurants = async () => {
             try {
-                // Update this URL to match your actual backend service
-                // (using the RESTAURANT_ADMIN_SERVICE_URL from your backend code)
-                const response = await axios.get('http://localhost:5556/api/restaurants/verified');
+                // Updated URL to use the correct API gateway service at port 5558
+                const response = await axios.get('http://localhost:5558/restaurants');
 
                 if (response.data.success) {
-                    // Transform the categorized data into a flat array
+                    // Process categorized restaurants from the response
                     let allRestaurants = [];
 
-                    // Check if response is already categorized
+                    // If restaurants are categorized by business type (as in your backend code)
                     if (response.data.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
-                        allRestaurants = Object.values(response.data.data).flat();
+                        // Flatten categorized restaurants into a single array
+                        Object.values(response.data.data).forEach(categoryRestaurants => {
+                            allRestaurants = [...allRestaurants, ...categoryRestaurants];
+                        });
                     } else if (Array.isArray(response.data.data)) {
                         allRestaurants = response.data.data;
                     }
