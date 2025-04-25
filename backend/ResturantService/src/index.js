@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
 const restaurantRoutes = require("../src/routes/resRouU");
 
@@ -10,6 +11,7 @@ const MONGOURI = process.env.MONGOURI;
 
 // Middleware
 app.use(express.json());
+app.use(cors());
 
 
 mongoose.connect(MONGOURI, {

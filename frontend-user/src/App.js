@@ -28,7 +28,7 @@ export default function App() {
 
                 {/* Protected routes */}
                 <Route element={<ProtectedRoute />}>
-                    <Route path="/menu" element={<RestaurantMenu />} />
+                    <Route path="/menu/:restaurantId" element={<RestaurantMenu/>} />
                     <Route path="/restaurants" element={<RestaurantsList />} />
                     <Route path="/cart" element={<CartPage />} />
                     <Route path="/checkout" element={<CheckoutPage />} />
