@@ -13,8 +13,8 @@ router.post("/register", async (req, res) => {
     console.log("Registration attempt:", { name, email, role });
 
     // Validate input
-    if (!name || !email || !password || !address || !phone) {
-      return res.status(400).json({ error: "All fields are required" });
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Name, email, and password are required" });
     }
 
     // If role is delivery_personnel, validate deliveryPersonnelDetails fields
