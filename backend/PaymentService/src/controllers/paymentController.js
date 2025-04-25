@@ -91,8 +91,31 @@ const getMonthlyRevenue = async (req, res) => {
   }
 };
 
+// Get total transaction amount
+const getTotalTransactionAmount = async (req, res) => {
+  try {
+    const result = await Payment.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    const total = result.length > 0 ? result[0].totalAmount : 0;
+
+    res.status(200).json({ total });
+  } catch (error) {
+    console.error("Error calculating total transaction amount:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
 module.exports = {
   createPaymentIntent,
   getAllPaymentIntents,
-  getMonthlyRevenue
+  getMonthlyRevenue,
+  getTotalTransactionAmount,
 };

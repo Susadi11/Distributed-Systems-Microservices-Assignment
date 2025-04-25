@@ -390,3 +390,24 @@ exports.getVerifiedRestaurants = async (req, res) => {
     });
   }
 };
+
+//user side display pending restaurants
+exports.getPendingRestaurants = async (req, res) => {
+  try {
+    const pending = await Restaurant.find({ status: 'pending' })
+        .select('-__v -password')
+        .lean();
+
+    res.status(200).json({
+      success: true,
+      count: pending.length,
+      data: pending
+    });
+  } catch (error) {
+    console.error('Error fetching pending restaurants:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching pending restaurants'
+    });
+  }
+};

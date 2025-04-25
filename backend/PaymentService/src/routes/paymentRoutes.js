@@ -11,4 +11,7 @@ router.get('/payment-intents', paymentController.getAllPaymentIntents);
 // Route to get monthly revenue
 router.get('/monthly-revenue', paymentController.getMonthlyRevenue);
 
+// Route to get all payments
+router.get('/all-payments', paymentController.getTotalTransactionAmount);
+
 module.exports = router;
