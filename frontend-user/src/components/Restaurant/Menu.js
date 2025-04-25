@@ -13,19 +13,20 @@ import {
     Minus,
     Loader
 } from 'lucide-react';
+import { useCart } from '../../contexts/CartContext';
 
 const Menu = () => {
-    const { restaurantId } = useParams(); // Get restaurant ID from URL
+    const { restaurantId } = useParams();
     const [activeTab, setActiveTab] = useState('');
     const [searchVisible, setSearchVisible] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [quantities, setQuantities] = useState({});
     const [restaurant, setRestaurant] = useState(null);
-    const [menuItems, setMenuItems] = useState([]);
     const [menuCategories, setMenuCategories] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const searchInputRef = useRef(null);
+
+    const { addToCart, updateQuantity, removeFromCart, getItemQuantity } = useCart();
 
     // Fetch restaurant details and menu
     useEffect(() => {
@@ -33,13 +34,11 @@ const Menu = () => {
             try {
                 setLoading(true);
 
-                // First, get the restaurant details
+                // Get restaurant details
                 const restaurantsResponse = await axios.get('http://localhost:5558/restaurants');
                 let restaurantData = null;
 
-                // Find the restaurant by ID
                 if (restaurantsResponse.data.success) {
-                    // Search through all categories
                     Object.values(restaurantsResponse.data.data).forEach(categoryRestaurants => {
                         const found = categoryRestaurants.find(r => r._id === restaurantId);
                         if (found) restaurantData = found;
@@ -52,13 +51,15 @@ const Menu = () => {
 
                 setRestaurant(restaurantData);
 
-                // Next, get the menu for this restaurant
+                // Get menu for this restaurant
                 const menuResponse = await axios.get(`http://localhost:5558/restaurants/${restaurantId}/menu`);
 
                 if (menuResponse.data.success) {
-                    const menuData = menuResponse.data.menu;
+                    const menuData = menuResponse.data.menu.map(item => ({
+                        ...item,
+                        restaurant: restaurantId
+                    }));
 
-                    // Organize menu items by category
                     const categorizedMenu = menuData.reduce((acc, item) => {
                         const category = item.category || 'Other';
                         acc[category] = acc[category] || [];
@@ -66,10 +67,8 @@ const Menu = () => {
                         return acc;
                     }, {});
 
-                    setMenuItems(menuData);
                     setMenuCategories(categorizedMenu);
 
-                    // Set the first category as active
                     if (Object.keys(categorizedMenu).length > 0) {
                         setActiveTab(Object.keys(categorizedMenu)[0]);
                     }
@@ -94,26 +93,30 @@ const Menu = () => {
         }
     }, [searchVisible]);
 
-    const handleIncrement = (itemId) => {
-        setQuantities(prev => ({
-            ...prev,
-            [itemId]: (prev[itemId] || 0) + 1
-        }));
+    const handleIncrement = async (item) => {
+        const currentQuantity = getItemQuantity(item._id);
+
+        if (currentQuantity === 0) {
+            await addToCart({
+                _id: item._id,
+                productName: item.productName,
+                price: item.price,
+                images: item.images,
+                restaurant: restaurantId
+            });
+        } else {
+            await updateQuantity(item._id, currentQuantity + 1);
+        }
     };
 
-    const handleDecrement = (itemId) => {
-        setQuantities(prev => {
-            const newQuantity = (prev[itemId] || 0) - 1;
-            if (newQuantity <= 0) {
-                const newQuantities = {...prev};
-                delete newQuantities[itemId];
-                return newQuantities;
-            }
-            return {
-                ...prev,
-                [itemId]: newQuantity
-            };
-        });
+    const handleDecrement = async (itemId) => {
+        const currentQuantity = getItemQuantity(itemId);
+
+        if (currentQuantity === 1) {
+            await removeFromCart(itemId);
+        } else if (currentQuantity > 1) {
+            await updateQuantity(itemId, currentQuantity - 1);
+        }
     };
 
     const renderMenuItem = (item) => {
@@ -122,9 +125,8 @@ const Menu = () => {
             : displayRating >= 3.5 ? 'text-yellow-500'
                 : 'text-gray-400';
 
-        const quantity = quantities[item._id] || 0;
+        const quantity = getItemQuantity(item._id);
 
-        // Use the first image from the product images or a placeholder
         const imageUrl = item.images && item.images.length > 0
             ? `http://localhost:5556${item.images[0]}`
             : '/api/placeholder/400/320';
@@ -157,7 +159,7 @@ const Menu = () => {
                 </div>
                 <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-base font-semibold text-gray-900">{item.name}</h3>
+                        <h3 className="text-base font-semibold text-gray-900">{item.productName}</h3>
                         {displayRating !== null && (
                             <div className="flex items-center text-xs text-gray-600">
                                 <Star className={`w-3 h-3 mr-0.5 ${starColor}`} />
