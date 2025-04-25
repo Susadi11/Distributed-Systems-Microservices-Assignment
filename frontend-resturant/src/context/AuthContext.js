@@ -56,6 +56,9 @@ export const AuthProvider = ({ children }) => {
       if (data.user.status && data.user.status !== 'approved') {
         throw new Error('Your account is pending approval. Please wait for admin approval.');
       }
+      if (data.user.role === 'restaurant_admin') {
+        await fetchRestaurantAdminDetails();
+      }
       
       // Save token to localStorage
       localStorage.setItem('authToken', data.token);
@@ -80,6 +83,21 @@ export const AuthProvider = ({ children }) => {
       throw error;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchRestaurantAdminDetails = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        const decoded = jwt.decode(token);
+        if (decoded?.restaurantId) {
+          const { data } = await api.get(`/restaurants/${decoded.restaurantId}`);
+          setUser(prev => ({ ...prev, restaurant: data }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch restaurant details:', error);
     }
   };
   

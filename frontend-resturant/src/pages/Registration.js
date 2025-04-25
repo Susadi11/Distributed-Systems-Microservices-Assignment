@@ -115,35 +115,46 @@ const Registration = () => {
     setIsSubmitting(true);
     setError(null);
   
-    // Validate user is authenticated
+    // Validate required fields
+    const requiredFields = [
+      'storeName', 'brandName', 'businessType', 
+      'firstName', 'lastName', 'phoneNumber',
+      'storeAddress', 'city', 'state', 'postalCode', 'email'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !formData[field]);
+    
+    if (missingFields.length > 0) {
+      setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      setIsSubmitting(false);
+      return;
+    }
+  
     if (!userId) {
       setError("Authentication required. Please log in first.");
       setIsSubmitting(false);
       return;
     }
-
+  
     try {
-      // Create FormData object for multipart/form-data submission
       const formDataToSend = new FormData();
       
-      // Add text fields
+      // Append all form data
       formDataToSend.append('storeName', formData.storeName);
       formDataToSend.append('brandName', formData.brandName);
       formDataToSend.append('businessType', formData.businessType);
-      formDataToSend.append('streetAddress', formData.storeAddress);
-      formDataToSend.append('floorSuite', formData.floorSuite);
-      formDataToSend.append('city', formData.city);
-      formDataToSend.append('state', formData.state);
-      formDataToSend.append('postalCode', formData.postalCode);
       formDataToSend.append('firstName', formData.firstName);
       formDataToSend.append('lastName', formData.lastName);
       formDataToSend.append('phoneNumber', formData.phoneNumber);
+      formDataToSend.append('storeAddress', formData.storeAddress); // This matches backend expectation
+      formDataToSend.append('city', formData.city);
+      formDataToSend.append('state', formData.state);
+      formDataToSend.append('postalCode', formData.postalCode);
       formDataToSend.append('email', formData.email);
       formDataToSend.append('termsAccepted', formData.termsAccepted);
       formDataToSend.append('countryCode', countryCode);
       formDataToSend.append('userId', userId);
       
-      // Add image file if selected
       if (profileImage) {
         formDataToSend.append('profileImage', profileImage);
       }
@@ -151,8 +162,7 @@ const Registration = () => {
       const response = await fetch('http://localhost:5556/api/restaurants', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}` // Include auth token
-          // Don't set Content-Type header when using FormData - it will be set automatically with boundary
+          'Authorization': `Bearer ${token}`
         },
         body: formDataToSend
       });
@@ -162,9 +172,15 @@ const Registration = () => {
         throw new Error(errorData.message || 'Registration failed');
       }
       
+      const responseData = await response.json();
+      
+      if (responseData.data?.token) {
+        localStorage.setItem('authToken', responseData.data.token);
+      }
+  
       setSubmitSuccess(true);
       
-      // Reset form data
+      // Reset form
       setFormData({
         storeName: '',
         brandName: '',
@@ -181,7 +197,6 @@ const Registration = () => {
         termsAccepted: false
       });
       
-      // Reset image state
       setProfileImage(null);
       setImagePreview(null);
       

@@ -1,74 +1,120 @@
 const Restaurant = require('../models/Restaurant');
 const mongoose = require('mongoose');
 
+const jwt = require('jsonwebtoken');
+
+
 
 exports.registerRestaurant = async (req, res) => {
   try {
-    const {
-      storeName,
-      brandName,
-      businessType,
-      streetAddress,
-      floorSuite,
-      city,
-      state,
-      postalCode,
-      firstName,
-      lastName,
-      phoneNumber,
-      email,
-      termsAccepted,
-      countryCode,
-      userId 
-    } = req.body;
+    // Validate required fields
+    const requiredFields = {
+      storeName: 'Store name',
+      brandName: 'Brand name',
+      businessType: 'Business type',
+      firstName: 'First name',
+      lastName: 'Last name',
+      phoneNumber: 'Phone number',
+      storeAddress: 'Street address',  // This matches the form field name
+      city: 'City',
+      state: 'State',
+      postalCode: 'Postal code',
+      email: 'Email',
+      userId: 'User ID'
+    };
 
-    // Create new restaurant object
+    // Check for missing fields
+    const missingFields = Object.entries(requiredFields)
+      .filter(([field]) => !req.body[field])
+      .map(([_, label]) => label);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid email address'
+      });
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^[0-9]{10,15}$/;
+    if (!phoneRegex.test(req.body.phoneNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid phone number (10-15 digits)'
+      });
+    }
+
+    // Create new restaurant
     const newRestaurant = new Restaurant({
-      storeName,
-      brandName,
-      businessType,
+      storeName: req.body.storeName,
+      brandName: req.body.brandName,
+      businessType: req.body.businessType,
       address: {
-        street: streetAddress,
-        floorSuite: floorSuite || '',
-        city,
-        state,
-        postalCode
+        street: req.body.storeAddress,  // Changed from streetAddress to storeAddress
+        floorSuite: req.body.floorSuite || '',
+        city: req.body.city,
+        state: req.body.state,
+        postalCode: req.body.postalCode
       },
       contact: {
-        firstName,
-        lastName,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
         phone: {
-          countryCode: countryCode || '+94',
-          number: phoneNumber
+          countryCode: req.body.countryCode || '+94',
+          number: req.body.phoneNumber
         },
-        email
+        email: req.body.email
       },
-      termsAccepted,
-      user: userId
+      termsAccepted: req.body.termsAccepted,
+      user: req.body.userId
     });
 
-    // Add profile image if it was uploaded
+    // Handle file upload
     if (req.file) {
-      // Store the path to the uploaded file
       newRestaurant.profileImage = [`/${req.file.path.replace(/\\/g, '/')}`];
     }
 
-    // Save to database
+    // Save restaurant
     const savedRestaurant = await newRestaurant.save();
+
+    // Generate new JWT with restaurant_id
+    const enhancedToken = jwt.sign(
+      {
+        userId: req.body.userId,
+        restaurantId: savedRestaurant._id,
+        role: 'restaurant_admin'
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
     res.status(201).json({
       success: true,
       data: {
-        id: savedRestaurant._id,
-        storeName: savedRestaurant.storeName,
-        email: savedRestaurant.contact.email,
-        profileImage: savedRestaurant.profileImage
+        token: enhancedToken,
+        restaurant: {
+          id: savedRestaurant._id,
+          storeName: savedRestaurant.storeName,
+          email: savedRestaurant.contact.email,
+          profileImage: savedRestaurant.profileImage
+        }
       },
-      message: 'Restaurant registration submitted successfully!'
+      message: 'Restaurant registered successfully!'
     });
+
   } catch (error) {
     console.error('Registration error:', error);
     
+    // Handle duplicate email error
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
@@ -76,6 +122,7 @@ exports.registerRestaurant = async (req, res) => {
       });
     }
     
+    // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(val => val.message);
       return res.status(400).json({
@@ -84,13 +131,13 @@ exports.registerRestaurant = async (req, res) => {
       });
     }
     
+    // Handle other errors
     res.status(500).json({
       success: false,
       message: 'Server error during registration'
     });
   }
 };
-
 
 // Get restaurant by user ID
 

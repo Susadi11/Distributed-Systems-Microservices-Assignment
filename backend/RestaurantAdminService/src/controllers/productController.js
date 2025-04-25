@@ -3,10 +3,12 @@ const path = require('path'); // Add this line to import the path module
 
 exports.createProduct = async (req, res) => {
   try {
+    // Extract user and restaurant IDs from the authenticated request
+    const { userId, restaurantId } = req.user;
+    
     let imagePaths = [];
     if (req.files && req.files.length > 0) {
       imagePaths = req.files.map(file => {
-        // Create URL-friendly path for database
         return `/uploads/${path.basename(file.path)}`;
       });
     }
@@ -21,11 +23,12 @@ exports.createProduct = async (req, res) => {
       status: req.body.status || 'available',
       discount: req.body.discount === 'true' || req.body.discount === true,
       images: imagePaths,
-      user: req.body.userId // Assuming userId is passed in the request body
+      restaurant: restaurantId, // This will come from the token
+      user: userId // This will come from the token
     });
     
     const savedProduct = await product.save();
-    console.log('Saved to DB:', savedProduct); // Debug saved document
+    console.log('Saved to DB:', savedProduct);
     
     res.status(201).json(savedProduct);
   } catch (err) {

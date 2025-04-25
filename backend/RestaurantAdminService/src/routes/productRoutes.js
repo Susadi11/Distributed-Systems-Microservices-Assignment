@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
-
+const authMiddleware = require('../../../AuthService/src/middleware/authMiddleware');
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, '..', 'uploads');
@@ -49,7 +49,7 @@ const upload = multer({
 });
 
 // Routes
-router.post('/', upload.array('images', 5), productController.createProduct);
+router.post('/',authMiddleware.verifyRestaurantAdmin, upload.array('images', 5), productController.createProduct);
 router.get('/', productController.getAllProducts);
 router.get('/:id', productController.getProduct);
 router.put('/:id', productController.updateProduct);
