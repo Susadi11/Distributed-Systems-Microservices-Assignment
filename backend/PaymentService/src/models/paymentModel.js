@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// If you want to store payment data
+
 const paymentSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },  
   amount: { type: Number, required: true },
