@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import DashboardNavBar from "../components/utility/DashboardNavBar";
 import Sidebar from "../components/utility/Sidebar";
 import { Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -9,6 +9,9 @@ function AddProduct() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInput = useRef(null);
+  const [token, setToken] = useState(localStorage.getItem('authToken'));
+  const [userId, setUserId] = useState(null);
+  const [restaurantId, setRestaurantId] = useState(null);
 
   const [formData, setFormData] = useState({
     productName: "",
@@ -30,6 +33,51 @@ function AddProduct() {
     "Desserts",
     "Beverages"
   ];
+
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('Error parsing JWT token:', e);
+      return null;
+    }
+  };
+
+  // Get user and restaurant IDs from token when component mounts
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = parseJwt(token);
+        console.log('Decoded token:', decoded);
+
+        // Extract IDs from token
+        const extractedUserId = decoded.userId || decoded.id || decoded._id || decoded.sub;
+        const extractedRestaurantId = decoded.restaurantId;
+
+        if (extractedUserId) {
+          setUserId(extractedUserId);
+        } else {
+          console.error('No user ID found in token');
+        }
+
+        if (extractedRestaurantId) {
+          setRestaurantId(extractedRestaurantId);
+        } else {
+          console.error('No restaurant ID found in token');
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, [token]);
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -72,12 +120,23 @@ function AddProduct() {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Validate user and restaurant IDs
+    if (!userId || !restaurantId) {
+      alert('Authentication required. Please log in again.');
+      setIsSubmitting(false);
+      return;
+    }
+
     const formDataToSend = new FormData();
     
     // Append all form data
     Object.entries(formData).forEach(([key, value]) => {
       formDataToSend.append(key, value);
     });
+
+    // Append IDs from token
+    formDataToSend.append('userId', userId);
+    formDataToSend.append('restaurantId', restaurantId);
 
     // Append files - making sure the field name matches what the server expects
     if (selectedFiles.length > 0) {
@@ -89,13 +148,17 @@ function AddProduct() {
     try {
       const response = await fetch('http://localhost:5556/api/products', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formDataToSend,
         // Don't set Content-Type header when sending FormData
         // The browser will automatically set it to multipart/form-data with the correct boundary
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to submit product');
       }
 
       const result = await response.json();
@@ -389,14 +452,23 @@ function AddProduct() {
                 </div>
               )}
 
+              {/* Debug information - remove in production */}
+              {(userId && restaurantId) && (
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded text-xs">
+                  <p className="text-gray-500 dark:text-gray-400">Token information loaded:</p>
+                  <p className="text-gray-600 dark:text-gray-300">User ID: {userId}</p>
+                  <p className="text-gray-600 dark:text-gray-300">Restaurant ID: {restaurantId}</p>
+                </div>
+              )}
+
               {/* Submit Button */}
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className={`w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isSubmitting || !userId || !restaurantId}
+                  className={`w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 ${(isSubmitting || !userId || !restaurantId) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Add Product'}
+                  {isSubmitting ? 'Submitting...' : (!userId || !restaurantId) ? 'Missing Authentication' : 'Add Product'}
                 </button>
               </div>
             </div>

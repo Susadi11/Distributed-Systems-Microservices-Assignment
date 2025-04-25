@@ -1,4 +1,3 @@
-// models/Product.js
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
@@ -10,20 +9,24 @@ const productSchema = new mongoose.Schema({
   description: String,
   status: { type: String, enum: ['available', 'unavailable'], default: 'available' },
   discount: { type: Boolean, default: false },
-  images: [{
+  images: [{ 
     type: String,
     validate: {
       validator: function(v) {
-        // Validate URL format (either local path or full URL)
         return /^(\/uploads\/.+|https?:\/\/.+)/.test(v);
       },
       message: props => `${props.value} is not a valid image path!`
     }
   }],
-  user:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:'User',
-    required:true
+  restaurant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant',
+    required: true
+  },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   createdAt: { type: Date, default: Date.now }
 });
