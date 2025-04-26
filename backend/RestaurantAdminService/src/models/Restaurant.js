@@ -110,14 +110,14 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  profileImage:  [{
+  profileImage: [{
     type: String,
     validate: {
       validator: function(v) {
-        // Validate URL format (either local path or full URL)
-        return /^(\/uploads\/.+|https?:\/\/.+)/.test(v);
+        // Validate URL format (either local path, full URL, or Base64 string)
+        return /^(\/uploads\/.+|https?:\/\/.+|data:image\/.+;base64,.+)/.test(v);
       },
-      message: props => `${props.value} is not a valid image path!`
+      message: props => `${props.value} is not a valid image path or Base64 string!`
     }
   }],
   openingHours: {

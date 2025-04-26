@@ -20,8 +20,8 @@ const Registration = () => {
     termsAccepted: false
   });
 
-  // Add state for image file
-  const [profileImage, setProfileImage] = useState(null);
+  // Replace profileImage with profileImageBase64
+  const [profileImageBase64, setProfileImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
   const [userId, setUserId] = useState(null);
@@ -95,18 +95,33 @@ const Registration = () => {
     }));
   };
 
-  // Handle image file selection
-  const handleImageChange = (e) => {
+  // Convert image file to Base64
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      fileReader.onload = () => {
+        resolve(fileReader.result);
+      };
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
+  };
+
+  // Handle image file selection with Base64 conversion
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfileImage(file);
-      
-      // Create preview URL for the selected image
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Convert image file to Base64 string
+        const base64String = await convertToBase64(file);
+        setProfileImageBase64(base64String);
+        setImagePreview(base64String);
+      } catch (error) {
+        console.error('Error converting image to Base64:', error);
+        setError('Failed to process the image. Please try another one.');
+      }
     }
   };
 
@@ -137,34 +152,21 @@ const Registration = () => {
     }
   
     try {
-      const formDataToSend = new FormData();
-      
-      // Append all form data
-      formDataToSend.append('storeName', formData.storeName);
-      formDataToSend.append('brandName', formData.brandName);
-      formDataToSend.append('businessType', formData.businessType);
-      formDataToSend.append('firstName', formData.firstName);
-      formDataToSend.append('lastName', formData.lastName);
-      formDataToSend.append('phoneNumber', formData.phoneNumber);
-      formDataToSend.append('storeAddress', formData.storeAddress); // This matches backend expectation
-      formDataToSend.append('city', formData.city);
-      formDataToSend.append('state', formData.state);
-      formDataToSend.append('postalCode', formData.postalCode);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('termsAccepted', formData.termsAccepted);
-      formDataToSend.append('countryCode', countryCode);
-      formDataToSend.append('userId', userId);
-      
-      if (profileImage) {
-        formDataToSend.append('profileImage', profileImage);
-      }
+      // Create request data object including all form fields and Base64 image
+      const requestData = {
+        ...formData,
+        countryCode,
+        userId,
+        profileImageBase64: profileImageBase64 // Include Base64 string directly
+      };
   
       const response = await fetch('http://localhost:5556/api/restaurants', {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: formDataToSend
+        body: JSON.stringify(requestData)
       });
   
       if (!response.ok) {
@@ -197,7 +199,7 @@ const Registration = () => {
         termsAccepted: false
       });
       
-      setProfileImage(null);
+      setProfileImageBase64(null);
       setImagePreview(null);
       
     } catch (err) {
@@ -306,7 +308,7 @@ const Registration = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setProfileImage(null);
+                        setProfileImageBase64(null);
                         setImagePreview(null);
                       }}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
@@ -337,7 +339,7 @@ const Registration = () => {
                         <p className="mt-1">JPG, PNG or GIF up to 5MB</p>
                       </>
                     ) : (
-                      <p>Image selected: {profileImage?.name}</p>
+                      <p>Image selected and converted to Base64</p>
                     )}
                   </div>
                   {!imagePreview && (
@@ -353,6 +355,7 @@ const Registration = () => {
               </div>
             </div>
 
+            {/* Rest of the form fields remain the same */}
             <div>
               <label htmlFor="storeAddress" className="block text-sm font-medium text-gray-700 mb-1">
                 Store address

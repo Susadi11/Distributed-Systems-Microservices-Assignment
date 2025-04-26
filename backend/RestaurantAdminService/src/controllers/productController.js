@@ -1,5 +1,4 @@
 const Product = require('../models/Product');
-const path = require('path'); // Add this line to import the path module
 const mongoose = require('mongoose');
 
 exports.createProduct = async (req, res) => {
@@ -7,13 +6,16 @@ exports.createProduct = async (req, res) => {
     // Extract user and restaurant IDs from the authenticated request
     const { userId, restaurantId } = req.user;
     
-    let imagePaths = [];
-    if (req.files && req.files.length > 0) {
-      imagePaths = req.files.map(file => {
-        return `/uploads/${path.basename(file.path)}`;
-      });
+    // Extract base64 images from request
+    let images = [];
+    if (req.body.images && Array.isArray(req.body.images)) {
+      images = req.body.images.map(img => ({
+        contentType: img.contentType,
+        data: img.data,
+        name: img.name
+      }));
     }
-    
+
     const product = new Product({
       productName: req.body.productName,
       category: req.body.category,
@@ -23,14 +25,14 @@ exports.createProduct = async (req, res) => {
       description: req.body.description || '',
       status: req.body.status || 'available',
       discount: req.body.discount === 'true' || req.body.discount === true,
-      images: imagePaths,
-      restaurant: restaurantId, // This will come from the token
-      user: userId // This will come from the token
+      images: images,
+      restaurant: restaurantId,
+      user: userId
     });
-    
+
     const savedProduct = await product.save();
     console.log('Saved to DB:', savedProduct);
-    
+
     res.status(201).json(savedProduct);
   } catch (err) {
     console.error('Save error:', err);

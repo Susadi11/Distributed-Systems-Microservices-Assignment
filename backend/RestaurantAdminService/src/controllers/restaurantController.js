@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 
 
-
 exports.registerRestaurant = async (req, res) => {
   try {
     // Validate required fields
@@ -15,26 +14,26 @@ exports.registerRestaurant = async (req, res) => {
       firstName: 'First name',
       lastName: 'Last name',
       phoneNumber: 'Phone number',
-      storeAddress: 'Street address',  // This matches the form field name
+      storeAddress: 'Street address',
       city: 'City',
       state: 'State',
       postalCode: 'Postal code',
       email: 'Email',
       userId: 'User ID'
     };
-
+    
     // Check for missing fields
     const missingFields = Object.entries(requiredFields)
       .filter(([field]) => !req.body[field])
       .map(([_, label]) => label);
-
+    
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
         message: `Missing required fields: ${missingFields.join(', ')}`
       });
     }
-
+    
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(req.body.email)) {
@@ -43,7 +42,7 @@ exports.registerRestaurant = async (req, res) => {
         message: 'Please enter a valid email address'
       });
     }
-
+    
     // Validate phone number format
     const phoneRegex = /^[0-9]{10,15}$/;
     if (!phoneRegex.test(req.body.phoneNumber)) {
@@ -52,14 +51,14 @@ exports.registerRestaurant = async (req, res) => {
         message: 'Please enter a valid phone number (10-15 digits)'
       });
     }
-
+    
     // Create new restaurant
     const newRestaurant = new Restaurant({
       storeName: req.body.storeName,
       brandName: req.body.brandName,
       businessType: req.body.businessType,
       address: {
-        street: req.body.storeAddress,  // Changed from streetAddress to storeAddress
+        street: req.body.storeAddress,
         floorSuite: req.body.floorSuite || '',
         city: req.body.city,
         state: req.body.state,
@@ -77,15 +76,16 @@ exports.registerRestaurant = async (req, res) => {
       termsAccepted: req.body.termsAccepted,
       user: req.body.userId
     });
-
-    // Handle file upload
-    if (req.file) {
-      newRestaurant.profileImage = [`/${req.file.path.replace(/\\/g, '/')}`];
+    
+    // Handle Base64 image
+    if (req.body.profileImageBase64) {
+      // Store the Base64 string directly in the database
+      newRestaurant.profileImage = [req.body.profileImageBase64];
     }
-
+    
     // Save restaurant
     const savedRestaurant = await newRestaurant.save();
-
+    
     // Generate new JWT with restaurant_id
     const enhancedToken = jwt.sign(
       {
@@ -96,7 +96,7 @@ exports.registerRestaurant = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
-
+    
     res.status(201).json({
       success: true,
       data: {
@@ -110,7 +110,7 @@ exports.registerRestaurant = async (req, res) => {
       },
       message: 'Restaurant registered successfully!'
     });
-
+    
   } catch (error) {
     console.error('Registration error:', error);
     
