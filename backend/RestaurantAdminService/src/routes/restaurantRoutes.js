@@ -68,4 +68,7 @@ console.log('Restaurant routes loaded');
 //user side display approved restaurants
 router.get('/verified', restaurantController.getVerifiedRestaurants);
 
+//user side display pending restaurants
+router.get('/pending', restaurantController.getPendingRestaurants);
+
 module.exports = router;
