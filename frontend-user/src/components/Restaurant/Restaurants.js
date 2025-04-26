@@ -86,11 +86,29 @@ const Restaurants = () => {
         >
             <div className="relative h-48">
                 {restaurant.profileImage && restaurant.profileImage.length > 0 ? (
-                    <img
-                        src={`http://localhost:5556${restaurant.profileImage[0]}`}
-                        alt={restaurant.storeName}
-                        className="w-full h-full object-cover"
-                    />
+                    // Check if the image is Base64 or a URL
+                    restaurant.profileImage[0].startsWith('data:image') ? (
+                        // Render Base64 image directly
+                        <img
+                            src={restaurant.profileImage[0]}
+                            alt={restaurant.storeName}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : restaurant.profileImage[0].startsWith('/') ? (
+                        // Render local path with server URL prefix
+                        <img
+                            src={`http://localhost:5556${restaurant.profileImage[0]}`}
+                            alt={restaurant.storeName}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        // Render full URL directly
+                        <img
+                            src={restaurant.profileImage[0]}
+                            alt={restaurant.storeName}
+                            className="w-full h-full object-cover"
+                        />
+                    )
                 ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                         <span className="text-gray-500">No Image</span>

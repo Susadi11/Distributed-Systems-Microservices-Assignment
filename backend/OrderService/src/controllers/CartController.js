@@ -87,7 +87,13 @@ class CartController {
                 quantity: quantity,
                 price: product.price,
                 name: product.productName,
-                image: product.images?.[0] || '/default-product.png',
+                image: product.images?.[0]?.data
+                    ? `data:${product.images[0].contentType};base64,${product.images[0].data}`
+                    : typeof product.images?.[0] === 'string'
+                        ? product.images[0].startsWith('data:image')
+                            ? product.images[0]
+                            : `http://localhost:5556${product.images[0]}`
+                        : '/default-product.png',
                 restaurant: product.restaurant || restaurantId
             };
 

@@ -34,6 +34,24 @@ export const CartProvider = ({ children }) => {
     const addToCart = async (item) => {
         try {
             setLoading(true);
+
+            // Extract the image properly
+            let imageData = '';
+            if (item.images && item.images.length > 0) {
+                // Handle base64 data from database object
+                if (item.images[0].data) {
+                    imageData = `data:${item.images[0].contentType};base64,${item.images[0].data}`;
+                }
+                // Handle string images (direct URLs or base64 strings)
+                else if (typeof item.images[0] === 'string') {
+                    if (item.images[0].startsWith('data:image')) {
+                        imageData = item.images[0]; // Already formatted base64
+                    } else {
+                        imageData = `http://localhost:5556${item.images[0]}`; // Local path
+                    }
+                }
+            }
+
             const payload = {
                 productId: item._id || item.productId,
                 restaurantId: item.restaurantId || item.restaurant?._id || item.restaurant,
@@ -41,7 +59,7 @@ export const CartProvider = ({ children }) => {
                 // Additional fields for display purposes
                 price: item.price,
                 name: item.productName || item.name,
-                image: item.images?.[0] || ''
+                image: imageData || '/default-product.png'
             };
 
             const response = await axios.post('http://localhost:5559/cart/add', payload);

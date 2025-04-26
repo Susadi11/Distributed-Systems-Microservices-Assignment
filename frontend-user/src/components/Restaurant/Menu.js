@@ -98,24 +98,19 @@ const Menu = () => {
             const currentQuantity = getItemQuantity(item._id);
 
             if (currentQuantity === 0) {
-                // For adding a new item to cart
                 const cartItem = {
-                    productId: item._id,  // Changed from _id to productId
-                    restaurantId: restaurantId,  // Changed from restaurant to restaurantId
+                    productId: item._id,
+                    restaurantId: restaurantId,
                     quantity: 1,
-                    // Additional fields for local cart management
                     productName: item.productName,
                     price: item.price,
                     images: item.images
                 };
 
                 await addToCart(cartItem);
-                console.log("Added to cart:", cartItem);
             } else {
-                // For updating existing item quantity
                 const newQuantity = currentQuantity + 1;
                 await updateQuantity(item._id, newQuantity);
-                console.log(`Updated quantity for ${item._id} to ${newQuantity}`);
             }
         } catch (error) {
             console.error("Error handling increment:", error);
@@ -128,21 +123,14 @@ const Menu = () => {
 
             if (currentQuantity === 1) {
                 await removeFromCart(itemId);
-                console.log(`Removed item ${itemId} from cart`);
             } else if (currentQuantity > 1) {
                 const newQuantity = currentQuantity - 1;
                 await updateQuantity(itemId, newQuantity);
-                console.log(`Decreased quantity for ${itemId} to ${newQuantity}`);
             }
         } catch (error) {
             console.error("Error handling decrement:", error);
         }
     };
-
-    useEffect(() => {
-        // Debug cart changes
-        console.log("Current cart state:", cart);
-    }, [cart]);
 
     const renderMenuItem = (item) => {
         const displayRating = item.rating ? (item.rating / 20).toFixed(1) : null;
@@ -152,18 +140,28 @@ const Menu = () => {
 
         const quantity = getItemQuantity(item._id);
 
+        // Fixed image URL handling logic
         const imageUrl = item.images && item.images.length > 0
-            ? `http://localhost:5556${item.images[0]}`
-            : '/api/placeholder/400/320';
+            ? item.images[0].data
+                // Handle base64 data from database object
+                ? `data:${item.images[0].contentType};base64,${item.images[0].data}`
+                // Handle string images (direct URLs or base64 strings)
+                : typeof item.images[0] === 'string'
+                    ? item.images[0].startsWith('data:image')
+                        ? item.images[0] // Already formatted base64
+                        : `http://localhost:5556${item.images[0]}` // Local path
+                    : '/api/placeholder/400/320' // Fallback for other formats
+            : '/api/placeholder/400/320'; // No images
 
         return (
             <div key={item._id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 hover:border-gray-200 transition-colors">
                 <div className="relative h-48">
                     <img
                         src={imageUrl}
-                        alt={item.name}
+                        alt={item.productName}
                         className="w-full h-full object-cover"
                         onError={(e) => {
+                            console.log("Image failed to load:", imageUrl);
                             e.target.onerror = null;
                             e.target.src = '/api/placeholder/400/320';
                         }}
@@ -284,15 +282,18 @@ const Menu = () => {
         );
     }
 
-    // Filter menu items based on search term if entered
+    // Filter menu items based on search term - FIXED HERE
     const filteredMenuItems = menuCategories[activeTab]?.filter(item =>
-        !searchTerm || item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        !searchTerm ||
+        item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
     ) || [];
 
-    // Get restaurant image URL
+    // Handle restaurant image (Base64 or URL)
     const restaurantImage = restaurant.profileImage && restaurant.profileImage.length > 0
-        ? `http://localhost:5556${restaurant.profileImage[0]}`
+        ? restaurant.profileImage[0].startsWith('data:image')
+            ? restaurant.profileImage[0]
+            : `http://localhost:5556${restaurant.profileImage[0]}`
         : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1470&q=80';
 
     return (
