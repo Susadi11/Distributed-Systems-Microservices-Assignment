@@ -82,12 +82,25 @@ function AddProduct() {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     
-    // Store the actual files for submission
-    setSelectedFiles(prevFiles => [...prevFiles, ...files]);
-    
-    // Create preview URLs for display only
-    const imageUrls = files.map(file => URL.createObjectURL(file));
-    setProductImages([...productImages, ...imageUrls]);
+    // Process each file to create preview URLs and convert to base64
+    files.forEach(file => {
+      // Create preview URL for display
+      const imageUrl = URL.createObjectURL(file);
+      setProductImages(prev => [...prev, imageUrl]);
+      
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        // Store base64 data, content type, and filename
+        setSelectedFiles(prev => [...prev, {
+          name: file.name,
+          contentType: file.type,
+          data: base64String.split(',')[1] // Remove the data:image/jpeg;base64, part
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const removeImage = (index) => {
@@ -127,33 +140,22 @@ function AddProduct() {
       return;
     }
 
-    const formDataToSend = new FormData();
-    
-    // Append all form data
-    Object.entries(formData).forEach(([key, value]) => {
-      formDataToSend.append(key, value);
-    });
-
-    // Append IDs from token
-    formDataToSend.append('userId', userId);
-    formDataToSend.append('restaurantId', restaurantId);
-
-    // Append files - making sure the field name matches what the server expects
-    if (selectedFiles.length > 0) {
-      selectedFiles.forEach(file => {
-        formDataToSend.append('images', file);
-      });
-    }
+    // Create request data object
+    const requestData = {
+      ...formData,
+      userId: userId,
+      restaurantId: restaurantId,
+      images: selectedFiles
+    };
 
     try {
       const response = await fetch('http://localhost:5556/api/products', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: formDataToSend,
-        // Don't set Content-Type header when sending FormData
-        // The browser will automatically set it to multipart/form-data with the correct boundary
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
@@ -258,6 +260,7 @@ function AddProduct() {
                   </div>
                 </div>
 
+                {/* Rest of the form fields remain the same */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Currency */}
                   <div>

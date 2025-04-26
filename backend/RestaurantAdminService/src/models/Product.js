@@ -9,14 +9,10 @@ const productSchema = new mongoose.Schema({
   description: String,
   status: { type: String, enum: ['available', 'unavailable'], default: 'available' },
   discount: { type: Boolean, default: false },
-  images: [{ 
-    type: String,
-    validate: {
-      validator: function(v) {
-        return /^(\/uploads\/.+|https?:\/\/.+)/.test(v);
-      },
-      message: props => `${props.value} is not a valid image path!`
-    }
+  images: [{
+    contentType: { type: String, required: true },
+    data: { type: String, required: true }, // Base64 encoded image data
+    name: { type: String }
   }],
   restaurant: {
     type: mongoose.Schema.Types.ObjectId,
