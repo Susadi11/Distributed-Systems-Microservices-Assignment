@@ -27,18 +27,38 @@ const MenuList = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5556/api/products');
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        throw new Error('Authentication required - please login again');
+      }
+  
+      const response = await fetch('http://localhost:5556/api/products', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+  
       const data = await response.json();
       setProducts(data);
       
-      // Calculate statistics
       setStats({
         totalProducts: data.length,
         availableProducts: data.filter(p => p.status === 'available').length,
         unavailableProducts: data.filter(p => p.status === 'unavailable').length
       });
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Fetch products error:', {
+        message: error.message,
+        stack: error.stack
+      });
+      alert(`Failed to load products: ${error.message}`);
     } finally {
       setLoading(false);
     }
