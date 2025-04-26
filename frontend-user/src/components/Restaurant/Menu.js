@@ -26,7 +26,7 @@ const Menu = () => {
     const [error, setError] = useState(null);
     const searchInputRef = useRef(null);
 
-    const { addToCart, updateQuantity, removeFromCart, getItemQuantity } = useCart();
+    const { addToCart, updateQuantity, removeFromCart, getItemQuantity, cart } = useCart();
 
     // Fetch restaurant details and menu
     useEffect(() => {
@@ -94,30 +94,55 @@ const Menu = () => {
     }, [searchVisible]);
 
     const handleIncrement = async (item) => {
-        const currentQuantity = getItemQuantity(item._id);
+        try {
+            const currentQuantity = getItemQuantity(item._id);
 
-        if (currentQuantity === 0) {
-            await addToCart({
-                _id: item._id,
-                productName: item.productName,
-                price: item.price,
-                images: item.images,
-                restaurant: restaurantId
-            });
-        } else {
-            await updateQuantity(item._id, currentQuantity + 1);
+            if (currentQuantity === 0) {
+                // For adding a new item to cart
+                const cartItem = {
+                    productId: item._id,  // Changed from _id to productId
+                    restaurantId: restaurantId,  // Changed from restaurant to restaurantId
+                    quantity: 1,
+                    // Additional fields for local cart management
+                    productName: item.productName,
+                    price: item.price,
+                    images: item.images
+                };
+
+                await addToCart(cartItem);
+                console.log("Added to cart:", cartItem);
+            } else {
+                // For updating existing item quantity
+                const newQuantity = currentQuantity + 1;
+                await updateQuantity(item._id, newQuantity);
+                console.log(`Updated quantity for ${item._id} to ${newQuantity}`);
+            }
+        } catch (error) {
+            console.error("Error handling increment:", error);
         }
     };
 
     const handleDecrement = async (itemId) => {
-        const currentQuantity = getItemQuantity(itemId);
+        try {
+            const currentQuantity = getItemQuantity(itemId);
 
-        if (currentQuantity === 1) {
-            await removeFromCart(itemId);
-        } else if (currentQuantity > 1) {
-            await updateQuantity(itemId, currentQuantity - 1);
+            if (currentQuantity === 1) {
+                await removeFromCart(itemId);
+                console.log(`Removed item ${itemId} from cart`);
+            } else if (currentQuantity > 1) {
+                const newQuantity = currentQuantity - 1;
+                await updateQuantity(itemId, newQuantity);
+                console.log(`Decreased quantity for ${itemId} to ${newQuantity}`);
+            }
+        } catch (error) {
+            console.error("Error handling decrement:", error);
         }
     };
+
+    useEffect(() => {
+        // Debug cart changes
+        console.log("Current cart state:", cart);
+    }, [cart]);
 
     const renderMenuItem = (item) => {
         const displayRating = item.rating ? (item.rating / 20).toFixed(1) : null;
@@ -185,7 +210,7 @@ const Menu = () => {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleIncrement(item._id);
+                                        handleIncrement(item);
                                     }}
                                     className="p-0.5 hover:bg-red-700 rounded-full"
                                 >
@@ -196,7 +221,7 @@ const Menu = () => {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    handleIncrement(item._id);
+                                    handleIncrement(item);
                                 }}
                                 className="p-1.5 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                             >
@@ -261,7 +286,7 @@ const Menu = () => {
 
     // Filter menu items based on search term if entered
     const filteredMenuItems = menuCategories[activeTab]?.filter(item =>
-        !searchTerm || item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        !searchTerm || item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
     ) || [];
 

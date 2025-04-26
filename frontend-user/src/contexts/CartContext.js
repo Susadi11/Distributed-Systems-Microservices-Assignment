@@ -34,15 +34,17 @@ export const CartProvider = ({ children }) => {
     const addToCart = async (item) => {
         try {
             setLoading(true);
-            const response = await axios.post('http://localhost:5559/cart/add', {
+            const payload = {
                 productId: item._id || item.productId,
-                quantity: 1,
+                restaurantId: item.restaurantId || item.restaurant?._id || item.restaurant,
+                quantity: item.quantity || 1,
+                // Additional fields for display purposes
                 price: item.price,
                 name: item.productName || item.name,
-                image: item.images?.[0] || '',
-                restaurant: item.restaurant
-            });
+                image: item.images?.[0] || ''
+            };
 
+            const response = await axios.post('http://localhost:5559/cart/add', payload);
             setCart(response.data.cart);
             return { success: true, cart: response.data.cart };
         } catch (err) {
