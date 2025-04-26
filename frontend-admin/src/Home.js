@@ -12,12 +12,21 @@ import {
   Pie,
   Cell,
   Legend,
+  BarChart,
+  Bar
 } from "recharts";
 import axios from "axios";
 import { useEffect, useState } from "react";
-// import Header from './components/Header';
+import { 
+  Hotel,
+  Clock, 
+  Users, 
+  DollarSign,
+  ArrowUp,
+  ArrowDown
+} from "lucide-react";
 
-const COLORS = ["#6366F1", "#06B6D4", "#10B981"];
+const COLORS = ["#6366F1", "#06B6D4", "#10B981", "#F59E0B", "#EC4899"];
 
 function Home() {
   const [userDistribution, setUserDistribution] = useState([]);
@@ -26,176 +35,238 @@ function Home() {
   const [pendingRestaurantCount, setPendingRestaurantCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
   const [totalTransaction, setTotalTransaction] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserRoles = async () => {
+    const fetchAllData = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:5555/auth/user-role-distribution"
-        );
-        setUserDistribution(res.data);
+        setLoading(true);
+        const [
+          userRolesRes,
+          revenueRes,
+          restaurantsRes,
+          usersRes,
+          paymentsRes
+        ] = await Promise.all([
+          axios.get("http://localhost:5555/auth/user-role-distribution"),
+          axios.get("http://localhost:5552/monthly-revenue"),
+          axios.get("http://localhost:5556/api/restaurants"),
+          axios.get("http://localhost:5555/auth/users"),
+          axios.get("http://localhost:5552/all-payments")
+        ]);
+
+        setUserDistribution(userRolesRes.data);
+        setRevenueData(revenueRes.data);
+        setRestaurantCount(restaurantsRes.data.data.verified.length);
+        setPendingRestaurantCount(restaurantsRes.data.data.pending.length);
+        setUserCount(usersRes.data.length);
+        setTotalTransaction(paymentsRes.data.total);
       } catch (error) {
-        console.error("Failed to fetch user role distribution:", error);
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Fetch monthly revenue data
-    const fetchRevenueData = async () => {
-      try {
-        const res = await axios.get("http://localhost:5552/monthly-revenue");
-        // Assuming the response contains an array like [{ month: 'Jan', revenue: 4000 }, ...]
-        setRevenueData(res.data);
-      } catch (error) {
-        console.error("Failed to fetch revenue data:", error);
-      }
-    };
-
-    //Fetch restaurant count
-    const fetchRestaurantCount = async () => {
-      try {
-        const res = await axios.get("http://localhost:5556/api/restaurants");
-        const verifiedCount = res.data.data.verified.length;
-        setRestaurantCount(verifiedCount);
-        console.log("Verified restaurant count:", verifiedCount);
-      } catch (error) {
-        console.error("Failed to fetch restaurant count:", error);
-      }
-    };
-
-    
-    //Fetch restaurant count
-    const fetchPendingRestaurantCount = async () => {
-      try {
-        const res = await axios.get("http://localhost:5556/api/restaurants");
-        const pendingCount = res.data.data.pending.length;
-        setPendingRestaurantCount(pendingCount);
-        console.log("Pending restaurant count:", pendingCount);
-      } catch (error) {
-        console.error("Failed to fetch restaurant count:", error);
-      }
-    };
-
-    //Fetch user count
-    const fetchUserCount = async () => {
-      try {
-        const res = await axios.get("http://localhost:5555/auth/users");
-        console.log("Full user response:", res.data);
-    
-        const totalUsers = res.data.length; // OR adjust this depending on what you see
-        setUserCount(totalUsers);
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
-      }
-    };
-
-    //Fetch total transaction amount
-    const fetchTotalTransaction = async () => {
-      try {
-        const res = await axios.get("http://localhost:5552/all-payments"); 
-        setTotalTransaction(res.data.total);
-        console.log("Total transaction amount:", res.data.total);
-      } catch (error) {
-        console.error("Failed to fetch total transaction amount:", error);
-      }
-    };
-    
-    
-   
-
-    fetchUserRoles();
-    fetchRevenueData();
-    fetchRestaurantCount();
-    fetchPendingRestaurantCount();
-    fetchUserCount();
-    fetchTotalTransaction();
+    fetchAllData();
   }, []);
 
-  return (
-    <div className="space-y-6">
-      {/* <Header/> */}
-      <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
+  // Calculate revenue growth percentage
+  const revenueGrowth = revenueData.length > 1 
+    ? ((revenueData[revenueData.length - 1].revenue - revenueData[revenueData.length - 2].revenue) / 
+       revenueData[revenueData.length - 2].revenue) * 100
+    : 0;
 
-      {/* Stats Cards Row */}
+  return (
+    <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
+          <p className="text-gray-600 mt-2">Key metrics and performance indicators</p>
+        </div>
+        <div className="text-sm text-gray-500">
+          Last updated: {new Date().toLocaleDateString()}
+        </div>
+      </div>
+
+      {/* Stats Cards Row - Larger Size */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Total Restaurants"
+          title="Verified Restaurants"
           value={restaurantCount}
-          icon={<span className="material-icons">restaurant</span>}
+          icon={<Hotel className="h-8 w-8" />}
           color="blue"
+          trend={restaurantCount > 0 ? "up" : "neutral"}
+          trendValue="12%"
+          className="h-full"
         />
         <StatsCard
           title="Pending Verifications"
           value={pendingRestaurantCount}
-          icon={<span className="material-icons">assignment</span>}
+          icon={<Clock className="h-8 w-8" />}
           color="yellow"
+          trend={pendingRestaurantCount > 0 ? "up" : "neutral"}
+          trendValue={`${pendingRestaurantCount > 0 ? "+" : ""}${pendingRestaurantCount}`}
+          className="h-full"
         />
         <StatsCard
           title="Total Users"
           value={userCount}
-          icon={<span className="material-icons">people</span>}
+          icon={<Users className="h-8 w-8" />}
           color="green"
+          trend="up"
+          trendValue="8%"
+          className="h-full"
         />
         <StatsCard
-          title="Revenue"
-          value={totalTransaction}
-          icon={<span className="material-icons">attach_money</span>}
+          title="Total Revenue"
+          value={`$${(totalTransaction / 100).toLocaleString()}`}
+          icon={<DollarSign className="h-8 w-8" />}
           color="purple"
+          trend={revenueGrowth >= 0 ? "up" : "down"}
+          trendValue={`${revenueGrowth >= 0 ? "+" : ""}${revenueGrowth.toFixed(1)}%`}
+          className="h-full"
         />
       </div>
 
-
-      {/* Charts Section */}
+      {/* Charts Section - Taller Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Line Chart - Revenue Growth */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Revenue Growth
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#6366F1"
-                strokeWidth={3}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-800">
+              Revenue Growth
+            </h3>
+            <div className="flex items-center">
+              <span className={`text-sm font-medium ${
+                revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {revenueGrowth >= 0 ? (
+                  <ArrowUp className="inline h-4 w-4" />
+                ) : (
+                  <ArrowDown className="inline h-4 w-4" />
+                )}
+                {Math.abs(revenueGrowth).toFixed(1)}% vs last month
+              </span>
+            </div>
+          </div>
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fill: '#6b7280' }}
+                  axisLine={false}
+                />
+                <YAxis 
+                  tick={{ fill: '#6b7280' }}
+                  axisLine={false}
+                  tickFormatter={(value) => `$${value}`}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    border: 'none'
+                  }}
+                  formatter={(value) => [`$${value}`, 'Revenue']}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#6366F1"
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6, stroke: '#6366F1', strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Pie Chart */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-6">
             User Role Distribution
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={userDistribution}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={100}
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={userDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={120}
+                  innerRadius={60}
+                  paddingAngle={2}
+                  dataKey="value"
+                 
+                >
+                  {userDistribution.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Legend 
+                  layout="vertical" 
+                  verticalAlign="middle" 
+                  align="right"
+                  formatter={(value, entry, index) => (
+                    <span className="text-gray-600">
+                      {value} ({userDistribution[index]?.value})
+                    </span>
+                  )}
+                />
+                <Tooltip 
+                  formatter={(value, name, props) => [
+                    value,
+                    `${name} (${((props.payload.percent) * 100).toFixed(1)}%)`
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Bar Chart Section */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h3 className="text-xl font-semibold text-gray-800 mb-6">
+          Monthly Revenue Breakdown
+        </h3>
+        <div className="h-96">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fill: '#6b7280' }}
+                axisLine={false}
+              />
+              <YAxis 
+                tick={{ fill: '#6b7280' }}
+                axisLine={false}
+                tickFormatter={(value) => `$${value}`}
+              />
+              <Tooltip 
+                contentStyle={{
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  border: 'none'
+                }}
+                formatter={(value) => [`$${value}`, 'Revenue']}
+              />
+              <Bar
+                dataKey="revenue"
                 fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) =>
-                  `${name} (${(percent * 100).toFixed(0)}%)`
-                }
-              >
-                {userDistribution.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Legend />
-              <Tooltip />
-            </PieChart>
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>

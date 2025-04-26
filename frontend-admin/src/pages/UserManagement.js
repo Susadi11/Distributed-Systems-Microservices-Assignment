@@ -281,6 +281,7 @@ function UserManagement() {
               />
               <select
                 value={editedUser.role}
+                disabled={editedUser.role}
                 onChange={(e) =>
                   setEditedUser({ ...editedUser, role: e.target.value })
                 }
