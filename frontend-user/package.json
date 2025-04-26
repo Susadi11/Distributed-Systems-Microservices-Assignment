@@ -5,6 +5,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@mapbox/mapbox-sdk": "^0.16.1",
+    "@react-google-maps/api": "^2.20.6",
     "@stripe/react-stripe-js": "^3.6.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

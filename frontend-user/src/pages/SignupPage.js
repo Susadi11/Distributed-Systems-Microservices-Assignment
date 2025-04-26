@@ -9,6 +9,7 @@ export function SignupPage() {
         email: '',
         password: '',
         confirmPassword: '',
+        phone: '',
         agreeToTerms: false
     });
     const [error, setError] = useState('');
@@ -53,6 +54,7 @@ export function SignupPage() {
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
+                phone: formData.phone,
                 role: 'customer'
             });
 
@@ -123,6 +125,18 @@ export function SignupPage() {
                                 onChange={handleChange}
                                 className="w-full px-4 py-3 border-b border-gray-300 focus:border-red-700 focus:outline-none bg-transparent transition-colors"
                                 placeholder="your@email.com"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-b border-gray-300 focus:border-red-700 focus:outline-none bg-transparent transition-colors"
+                                placeholder="Enter your phone number"
                             />
                         </div>
 
