@@ -37,13 +37,31 @@ exports.createProduct = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
+// In your productController.js
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    console.log('User from token:', req.user); // Debug logging
+    
+    if (!req.user?.restaurantId) {
+      console.error('No restaurantId in user token');
+      return res.status(400).json({ error: "Restaurant ID is required" });
+    }
+    
+    console.log('Looking for products with restaurant ID:', req.user.restaurantId);
+    
+    // This should be "restaurant", not "restaurantId"
+    const products = await Product.find({ restaurant: req.user.restaurantId });
+    
+    console.log('Found products:', products.length); // Debug logging
+    console.log('First product (if any):', products[0]); // See structure of first product
+    
     res.status(200).json(products);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in getAllProducts:', err);
+    res.status(500).json({
+      error: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 };
 

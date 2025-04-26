@@ -50,7 +50,7 @@ const upload = multer({
 
 // Routes
 router.post('/',authMiddleware.verifyRestaurantAdmin, upload.array('images', 5), productController.createProduct);
-router.get('/', productController.getAllProducts);
+router.get('/', authMiddleware.verifyRestaurantAdmin,productController.getAllProducts);
 router.get('/:id', productController.getProduct);
 router.put('/:id', productController.updateProduct);
 router.delete('/:id', productController.deleteProduct);
