@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Bell, ChevronDown, ClipboardList, Home, LogOut, Menu, MessageSquare, Settings, User } from "lucide-react"
 import { OrderCard } from "../components/order-card.jsx"
 import { Button } from "../components/ui/button.jsx"
@@ -19,6 +20,27 @@ import {
 
 export function DriverDashboard({ orders, selectedOrderId, onSelectOrder }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [driver, setDriver] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("driverToken");
+  
+    if (token) {
+      axios
+        .get("http://localhost:5555/auth/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((res) => {
+          setDriver(res.data.user);
+          console.log("Me response:", res.data.user);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch driver profile:", err);
+        });
+    }
+  }, []);
 
   const activeOrders = orders.filter((order) => order.status === "Assigned" || order.status === "Picked Up")
 
@@ -100,7 +122,9 @@ export function DriverDashboard({ orders, selectedOrderId, onSelectOrder }) {
 
       <div className="flex items-center justify-between border-b px-4 py-2">
         <div>
-          <h2 className="text-sm font-medium">John Driver</h2>
+          <h2 className="text-sm font-medium">
+            {driver ? driver.name : "Loading..."}
+          </h2>
           <p className="text-xs text-muted-foreground">Online • Available for deliveries</p>
         </div>
         <DropdownMenu>

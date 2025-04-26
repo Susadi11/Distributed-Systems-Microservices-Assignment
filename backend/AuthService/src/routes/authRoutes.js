@@ -10,7 +10,8 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, role, address, phone, deliveryPersonnelDetails } = req.body;
-    console.log("Registration attempt:", { name, email, role });
+
+    console.log("Registration attempt:", req.body);
 
     // Validate input
     if (!name || !email || !password || !address || !phone) {
