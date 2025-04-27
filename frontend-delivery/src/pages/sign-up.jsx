@@ -9,7 +9,6 @@ import { Input } from "../components/ui/input.jsx"
 import { Label } from "../components/ui/label.jsx"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select.jsx"
 import { Checkbox } from "../components/ui/checkbox.jsx"
-import LocationPicker from "../components/ui/location-picker.jsx"
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -28,8 +27,6 @@ export default function SignUp() {
     vehicleYear: "",
     licenseNumber: "",
     driversAddress: "",
-    latitude: "",
-    longitude: "",
     agreeTerms: false,
   })
   const [errors, setErrors] = useState({})
@@ -62,21 +59,6 @@ export default function SignUp() {
       setErrors({
         ...errors,
         [name]: "",
-      })
-    }
-  }
-
-  const handleLocationChange = (location) => {
-    setFormData({
-      ...formData,
-      location,
-    })
-
-    // Clear error when user selects location
-    if (errors.location) {
-      setErrors({
-        ...errors,
-        location: "",
       })
     }
   }
@@ -115,11 +97,8 @@ export default function SignUp() {
     if (!formData.vehicleModel) newErrors.vehicleModel = "Vehicle model is required"
     if (!formData.vehicleYear) newErrors.vehicleYear = "Vehicle year is required"
     if (!formData.licenseNumber) newErrors.licenseNumber = "License number is required"
-
-    if (!formData.location) {
-      newErrors.location = "Please select your location on the map"
-    }
-
+    if (!formData.vehicalNumber) newErrors.vehicalNumber = "Vehical number is required"
+    if (!formData.driversAddress) newErrors.driversAddress = "Drivers address is required"
     if (!formData.agreeTerms) {
       newErrors.agreeTerms = "You must agree to the terms and conditions"
     }
@@ -147,8 +126,6 @@ export default function SignUp() {
           Model: formData.vehicleModel,
           year: formData.vehicleYear,
           DriverLicense: formData.licenseNumber,
-          longitude: formData.location?.lng,
-          latitude: formData.location?.lat,
         }
       });
 
@@ -389,32 +366,6 @@ export default function SignUp() {
                   />
                   {errors.driversAddress && <p className="text-sm text-red-500">{errors.driversAddress}</p>}
                 </div>
-              </div>
-
-              
-
-              {/* Location Picker Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Your Location</h3>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin className="mr-1 h-4 w-4" />
-                    <span>Click on the map to set your location</span>
-                  </div>
-                </div>
-
-                <div className={`rounded-md border ${errors.location ? "border-red-500" : "border-gray-200"}`}>
-                  <LocationPicker onLocationSelect={handleLocationChange} />
-                </div>
-                {errors.location && <p className="text-sm text-red-500">{errors.location}</p>}
-
-                {formData.location && (
-                  <div className="rounded-md bg-gray-50 p-3 text-sm">
-                    <p className="font-medium">Selected Location:</p>
-                    <p>Latitude: {formData.location.lat.toFixed(6)}</p>
-                    <p>Longitude: {formData.location.lng.toFixed(6)}</p>
-                  </div>
-                )}
               </div>
 
               <div className="flex items-start space-x-2">

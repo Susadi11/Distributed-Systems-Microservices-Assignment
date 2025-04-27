@@ -24,7 +24,7 @@ router.post("/register", async (req, res) => {
 
     // If role is delivery_personnel, validate deliveryPersonnelDetails fields
     if (role === "delivery_personnel") {
-      const requiredFields = ["vehicleType", "vehicleNumber", "Make", "Model", "year", "DriverLicense", "longitude", "latitude"];
+      const requiredFields = ["vehicleType", "vehicleNumber", "Make", "Model", "year", "DriverLicense"];
       for (const field of requiredFields) {
         if (!deliveryPersonnelDetails || !deliveryPersonnelDetails[field]) {
           return res.status(400).json({ error: `Field ${field} is required for delivery personnel` });
