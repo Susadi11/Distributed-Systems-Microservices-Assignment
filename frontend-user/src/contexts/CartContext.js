@@ -15,7 +15,7 @@ export const CartProvider = ({ children }) => {
 
         try {
             setLoading(true);
-            const response = await axios.get('http://localhost:5559/cart');
+            const response = await axios.get('http://localhost:8080/api/orders/cart');
             setCart(response.data.cart);
         } catch (err) {
             console.error('Failed to fetch cart:', err);
@@ -62,7 +62,7 @@ export const CartProvider = ({ children }) => {
                 image: imageData || '/default-product.png'
             };
 
-            const response = await axios.post('http://localhost:5559/cart/add', payload);
+            const response = await axios.post('http://localhost:8080/api/orders/cart/add', payload);
             setCart(response.data.cart);
             return { success: true, cart: response.data.cart };
         } catch (err) {
@@ -77,7 +77,7 @@ export const CartProvider = ({ children }) => {
     const updateQuantity = async (productId, newQuantity) => {
         try {
             setLoading(true);
-            const response = await axios.put('http://localhost:5559/cart/update', {
+            const response = await axios.put('http://localhost:8080/api/orders/cart/update', {
                 productId,
                 quantity: newQuantity
             });
@@ -96,7 +96,7 @@ export const CartProvider = ({ children }) => {
     const removeFromCart = async (productId) => {
         try {
             setLoading(true);
-            const response = await axios.delete(`http://localhost:5559/cart/remove/${productId}`);
+            const response = await axios.delete(`http://localhost:8080/api/orders/cart/remove/${productId}`);
             setCart(response.data.cart);
             return { success: true, cart: response.data.cart };
         } catch (err) {
@@ -111,7 +111,7 @@ export const CartProvider = ({ children }) => {
     const clearCart = async () => {
         try {
             setLoading(true);
-            await axios.delete('http://localhost:5559/cart/clear');
+            await axios.delete('http://localhost:8080/api/orders/cart/clear');
             setCart({ user: user?.id, items: [] });
             return { success: true };
         } catch (err) {

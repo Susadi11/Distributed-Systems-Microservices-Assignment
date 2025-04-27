@@ -35,7 +35,7 @@ const Menu = () => {
                 setLoading(true);
 
                 // Get restaurant details
-                const restaurantsResponse = await axios.get('http://localhost:5558/restaurants');
+                const restaurantsResponse = await axios.get('http://localhost:8080/api/res_front/restaurants');
                 let restaurantData = null;
 
                 if (restaurantsResponse.data.success) {
@@ -52,7 +52,7 @@ const Menu = () => {
                 setRestaurant(restaurantData);
 
                 // Get menu for this restaurant
-                const menuResponse = await axios.get(`http://localhost:5558/restaurants/${restaurantId}/menu`);
+                const menuResponse = await axios.get(`http://localhost:8080/api/res_front/restaurants/${restaurantId}/menu`);
 
                 if (menuResponse.data.success) {
                     const menuData = menuResponse.data.menu.map(item => ({

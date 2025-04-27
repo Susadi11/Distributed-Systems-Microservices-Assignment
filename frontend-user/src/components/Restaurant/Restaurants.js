@@ -22,7 +22,7 @@ const Restaurants = () => {
         const fetchRestaurants = async () => {
             try {
                 // Updated URL to use the correct API gateway service at port 5558
-                const response = await axios.get('http://localhost:5558/restaurants');
+                const response = await axios.get('http://localhost:8080/api/res_front/restaurants');
 
                 if (response.data.success) {
                     // Process categorized restaurants from the response
