@@ -17,6 +17,10 @@ import ProfilePage from "./pages/ProfilePage";
 import PendingPage from "./pages/PendingPage";
 import SelectPayment from "./pages/SelectPayment";
 import StripePayment from "./pages/StripePayment";
+import {Elements} from "@stripe/react-stripe-js";
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 export default function App() {
     return (
@@ -38,7 +42,7 @@ export default function App() {
                         <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/pending" element={<PendingPage />} />
                         <Route path="/select-payment" element={<SelectPayment />} />
-                        <Route path="/stripe" element={<StripePayment />} />
+                        <Route path="/stripe" element={<Elements stripe={stripePromise}><StripePayment /></Elements>}/>
                     </Route>
                 </Routes>
             </CartProvider>

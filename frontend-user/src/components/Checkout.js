@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Check, Gift, MapPin, Clock, ChevronDown, Info, ChevronRight, CreditCard } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Check, Gift, MapPin, Clock, ChevronDown, Info, ChevronRight, CreditCard, Plus  } from 'lucide-react';
+import { useNavigate, useLocation  } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useCart } from '../contexts/CartContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import axios from 'axios'; // Add this import
 
 // Initialize Mapbox
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const Checkout = () => {
     const { user } = useAuth();
-    const { cart, loading, error, fetchCart } = useCart();
+    const { cart, loading, error, fetchCart, clearCart } = useCart();
     const [deliveryOption, setDeliveryOption] = useState('door');
     const [useUberOne, setUseUberOne] = useState(false);
     const [usePromotion, setUsePromotion] = useState(true);
@@ -22,6 +23,7 @@ const Checkout = () => {
     const mapContainer = useRef(null);
     const map = useRef(null);
     const marker = useRef(null);
+    const location = useLocation();
 
     // Default to SLIIT coordinates if no user location
     const [position, setPosition] = useState(
@@ -188,9 +190,132 @@ const Checkout = () => {
         );
     }
 
-    const handlePlaceOrder = () => {
-        // Here you would handle the order submission
-        navigate('/pending');
+    const handlePlaceOrder = async () => {
+        try {
+            // Check if user is authenticated
+            if (!user) {
+                alert('Please login to place an order');
+                navigate('/login');
+                return;
+            }
+
+            // Validate cart data
+            if (!cart || !cart.items || cart.items.length === 0) {
+                alert('Your cart is empty. Please add items before checkout.');
+                return;
+            }
+
+            // Find the restaurant ID from the first item
+            let restaurantId = null;
+            if (cart.items[0].restaurantId) {
+                restaurantId = cart.items[0].restaurantId;
+            } else if (cart.items[0].restaurant) {
+                restaurantId = typeof cart.items[0].restaurant === 'object'
+                    ? cart.items[0].restaurant._id
+                    : cart.items[0].restaurant;
+            }
+
+            if (!restaurantId) {
+                console.error("Restaurant ID not found in cart items:", cart.items);
+                alert('Restaurant information missing. Please try adding items again.');
+                return;
+            }
+
+            // Prepare order data with all required fields
+            const orderData = {
+                user: user._id,
+                userName: user.name || 'Customer',
+                items: cart.items.map(item => {
+                    let itemRestaurantId = item.restaurantId;
+                    if (!itemRestaurantId && item.restaurant) {
+                        itemRestaurantId = typeof item.restaurant === 'object'
+                            ? item.restaurant._id
+                            : item.restaurant;
+                    }
+
+                    return {
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        price: item.price,
+                        name: item.name,
+                        image: item.image,
+                        restaurant: itemRestaurantId || restaurantId
+                    };
+                }),
+                deliveryAddress: {
+                    name: user.name || 'Customer',
+                    description: address.description,
+                    street: address.street,
+                    coordinates: position
+                },
+                deliveryOption,
+                deliveryInstructions: instructions,
+                phoneNumber: user.phone || phoneNumber,
+                subtotal: orderSummary.subtotal,
+                tax: orderSummary.tax,
+                deliveryFee: orderSummary.deliveryFee,
+                serviceFee: orderSummary.serviceFee,
+                promotionDiscount: orderSummary.promotion,
+                total,
+                paymentMethod: selectedPaymentMethod,
+                restaurant: restaurantId,
+                estimatedDeliveryTime: new Date(Date.now() + 35 * 60 * 1000)
+            };
+
+            // If paying with card, redirect to Stripe payment page
+            if (selectedPaymentMethod === 'card') {
+                navigate('/stripe-payment', {
+                    state: {
+                        total,
+                        orderData,
+                        fromCheckout: true
+                    }
+                });
+                return;
+            }
+
+            // For cash payments, proceed directly to order creation
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                throw new Error('Authentication token not found');
+            }
+
+            const response = await axios.post('http://localhost:5559/orders', orderData, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.data.success) {
+                await clearCart();
+                navigate('/pending', {
+                    state: {
+                        orderId: response.data.order._id,
+                        total: response.data.order.total
+                    }
+                });
+            } else {
+                throw new Error(response.data.message || 'Failed to place order');
+            }
+
+        } catch (error) {
+            console.error('Order placement failed:', error);
+            console.error('Error details:', error.response?.data);
+
+            let errorMessage = 'Failed to place order. Please try again.';
+
+            if (error.response) {
+                if (error.response.data?.message) {
+                    errorMessage = error.response.data.message;
+                }
+                if (error.response.data?.errors) {
+                    errorMessage += `: ${error.response.data.errors.join(', ')}`;
+                }
+            }
+
+            alert(errorMessage);
+        }
     };
 
     return (
@@ -412,8 +537,8 @@ const Checkout = () => {
                                             <CreditCard className="w-6 h-6 text-gray-500 mr-3"/>
                                         )}
                                         <span className="font-medium">
-                                          {selectedPaymentMethod === 'cash' ? 'Cash' : 'Credit/Debit Card'}
-                                        </span>
+                    {selectedPaymentMethod === 'cash' ? 'Cash' : 'Credit/Debit Card'}
+                </span>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-gray-400"/>
                                 </button>
@@ -428,7 +553,8 @@ const Checkout = () => {
                                             className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'cash' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                                         >
                                             {selectedPaymentMethod === 'cash' && (
-                                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                                                <div
+                                                    className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
                                                     <Check className="w-3 h-3 text-white"/>
                                                 </div>
                                             )}
@@ -436,20 +562,18 @@ const Checkout = () => {
                                         </button>
 
                                         <button
-                                            onClick={() => {
-                                                navigate('/select-payment');
-                                            }}
-                                            className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'card' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
-                                        >
-                                            {selectedPaymentMethod === 'card' && (
-                                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
-                                                    <Check className="w-3 h-3 text-white"/>
-                                                </div>
-                                            )}
-                                            <span>Credit/Debit Card</span>
-                                        </button>
+                                            onClick={() => navigate('/stripe', {state: {total: total}})}
+                                            className="w-full text-left p-4 border border-gray-200 rounded-lg flex
+                                            items-center hover:bg-gray-50"
+                                            >
+                                        <div
+                                            className="w-5 h-5 border-2 border-gray-300 rounded-full flex items-center justify-center mr-3">
+                                            <Plus className="w-3 h-3 text-gray-400"/>
+                                        </div>
+                                        <span className="text-red-600 font-medium">Add New Card</span>
+                                    </button>
                                     </div>
-                                )}
+                                    )}
                             </div>
                         </div>
 

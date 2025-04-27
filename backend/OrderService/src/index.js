@@ -17,6 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const cartRoutes = require("../src/routes/CartRoutes");
+const orderRoutes = require("../src/routes/OrderRoute");
 
 mongoose
     .connect(MONGOURI)
@@ -31,6 +32,7 @@ mongoose
     });
 
 app.use('/cart', cartRoutes);
+app.use('/orders', orderRoutes);
 
 // Basic error handling
 app.use((err, req, res, next) => {

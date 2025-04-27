@@ -6,8 +6,6 @@ const authMiddleware = require("../middleware/authMiddleware");
 const axios = require("axios");
 
 const router = express.Router();
-const axios = require('axios');
-
 // Register Route
 router.post("/register", async (req, res) => {
   try {
