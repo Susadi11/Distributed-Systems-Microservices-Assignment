@@ -5,7 +5,7 @@ exports.createProduct = async (req, res) => {
   try {
     // Extract user and restaurant IDs from the authenticated request
     const { userId, restaurantId } = req.user;
-    
+
     // Extract base64 images from request
     let images = [];
     if (req.body.images && Array.isArray(req.body.images)) {
@@ -27,7 +27,7 @@ exports.createProduct = async (req, res) => {
       discount: req.body.discount === 'true' || req.body.discount === true,
       images: images,
       restaurant: restaurantId,
-      user: userId
+      user: userId // Include the userId here
     });
 
     const savedProduct = await product.save();
@@ -39,6 +39,7 @@ exports.createProduct = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 // In your productController.js
 exports.getAllProducts = async (req, res) => {
   try {

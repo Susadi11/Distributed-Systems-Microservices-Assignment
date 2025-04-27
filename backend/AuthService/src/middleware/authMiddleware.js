@@ -36,7 +36,7 @@ authMiddleware.authorize = (allowedRoles) => {
 };
 
 authMiddleware.verifyRestaurantAdmin = (req, res, next) => {
-  authMiddleware(['restaurant_admin'])(req, res, (err) => {
+  authMiddleware(['resturant_admin'])(req, res, (err) => {
     if (err) return next(err);
     
     if (!req.user.restaurantId) {

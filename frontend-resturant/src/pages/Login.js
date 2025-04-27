@@ -29,7 +29,7 @@ const Login = () => {
     
     // Validation
     let isValid = true;
-    const newErrors = { email: '', password: '' };
+    const newErrors = { email: '', password: '', form: '' };
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
@@ -52,25 +52,14 @@ const Login = () => {
     setLoading(true);
     try {
       const user = await login(formData.email, formData.password);
-      // Redirect based on user role
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      
+      // Login component doesn't need to handle navigation
+      // This is now handled in the AuthContext's login function
     } catch (error) {
       console.error('Login error:', error);
-      let errorMessage = 'Login failed. Please try again.';
       
-      // Check for specific error messages
-      if (error.message.includes('pending approval')) {
-        errorMessage = 'Your account is pending approval. Please wait for admin confirmation.';
-      } else if (error.message.includes('not found')) {
-        errorMessage = 'Email or password is incorrect.';
-      } else if (error.message.includes('rejected')) {
-        errorMessage = 'Your account application has been rejected. Please contact support.';
-      }
-      
+      // Display appropriate error message
+      const errorMessage = error.message || 'Login failed. Please try again.';
       setErrors({
         ...errors,
         form: errorMessage

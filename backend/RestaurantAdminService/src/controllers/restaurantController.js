@@ -1,7 +1,7 @@
 const Restaurant = require('../models/Restaurant');
 const mongoose = require('mongoose');
 
-const jwt = require('jsonwebtoken');
+
 
 
 exports.registerRestaurant = async (req, res) => {
@@ -18,8 +18,7 @@ exports.registerRestaurant = async (req, res) => {
       city: 'City',
       state: 'State',
       postalCode: 'Postal code',
-      email: 'Email',
-      userId: 'User ID'
+      email: 'Email'
     };
     
     // Check for missing fields
@@ -74,7 +73,7 @@ exports.registerRestaurant = async (req, res) => {
         email: req.body.email
       },
       termsAccepted: req.body.termsAccepted,
-      user: req.body.userId
+    
     });
     
     // Handle Base64 image
@@ -86,21 +85,11 @@ exports.registerRestaurant = async (req, res) => {
     // Save restaurant
     const savedRestaurant = await newRestaurant.save();
     
-    // Generate new JWT with restaurant_id
-    const enhancedToken = jwt.sign(
-      {
-        userId: req.body.userId,
-        restaurantId: savedRestaurant._id,
-        role: 'restaurant_admin'
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
     
     res.status(201).json({
       success: true,
       data: {
-        token: enhancedToken,
+      
         restaurant: {
           id: savedRestaurant._id,
           storeName: savedRestaurant.storeName,
@@ -138,6 +127,42 @@ exports.registerRestaurant = async (req, res) => {
     });
   }
 };
+
+// Endpoint to find a restaurant by contact email.  This is used for general restaurant retrieval.
+exports.findRestaurantByEmail = async (req, res) => {
+  try {
+    const email = req.params.email.toLowerCase();
+    const restaurant = await Restaurant.findOne({ 'contact.email': email });
+
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
+    }
+
+    res.json({ restaurant });
+  } catch (error) {
+    console.error('Error finding restaurant by email:', error);
+    res.status(500).json({ error: 'Server Error' });
+  }
+};
+
+// Endpoint to find a restaurant by admin's email.  This is used to get restaurant details for the admin user.
+exports.findRestaurantByAdminEmail = async (req, res) => {
+    try {
+        const adminEmail = req.params.email.toLowerCase();
+        const restaurant = await Restaurant.findOne({ 'contact.email': adminEmail });
+
+        if (!restaurant) {
+            return res.status(404).json({ message: 'Restaurant not found for this admin email.' });
+        }
+
+        res.json({ restaurant });
+
+    } catch (error) {
+        console.error('Error finding restaurant by admin email:', error);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
 
 // Get restaurant by user ID
 

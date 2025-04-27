@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/Axios'; // Keep your existing API setup
+import { authApi, restaurantApi } from '../api/Axios'; // Updated import
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -27,11 +27,12 @@ export const AuthProvider = ({ children }) => {
       try {
         const token = localStorage.getItem('authToken');
         if (token) {
-          // Set token for all future requests
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          // Set token for all future requests on both APIs
+          authApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          restaurantApi.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
           // Verify token with backend
-          const { data } = await api.get('/auth/me');
+          const { data } = await authApi.get('/auth/me');
           setUser(data.user);
         }
       } catch (error) {
@@ -48,36 +49,66 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setAuthError(null);
     setIsLoading(true);
-    
+  
     try {
-      const { data } = await api.post('/auth/login', { email, password });
-      
-      // Check if user status is approved (if your API implements status checks)
-      if (data.user.status && data.user.status !== 'approved') {
-        throw new Error('Your account is pending approval. Please wait for admin approval.');
-      }
-      if (data.user.role === 'restaurant_admin') {
-        await fetchRestaurantAdminDetails();
-      }
-      
-      // Save token to localStorage
+      // 1. First authenticate the user with auth service
+      const { data } = await authApi.post('/auth/login', { email, password });
+  
+      // Save token
       localStorage.setItem('authToken', data.token);
-      
-      // Set authorization header for future requests
-      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-      
-      // Set user state
+      authApi.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+      restaurantApi.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+  
+      // 2. If restaurant admin, check restaurant status using restaurant service
+      if (data.user.role === 'resturant_admin') {
+        try {
+          // Use restaurant API to get restaurant details
+          const restaurantResponse = await restaurantApi.get(`/restaurants/email/${email}`);
+          
+          // Check if restaurant exists and is approved
+          if (restaurantResponse.data.restaurant) {
+            if (restaurantResponse.data.restaurant.status.toLowerCase() !== 'approved') {
+              throw new Error(restaurantResponse.data.message || 
+                `Your account is ${restaurantResponse.data.restaurant.status}. Please wait for approval.`);
+            }
+            
+            // If approved, set user with restaurant data
+            setUser({ ...data.user, restaurant: restaurantResponse.data.restaurant });
+            toast.success('Logged in successfully');
+            navigate('/homepage');
+            return { ...data.user, restaurant: restaurantResponse.data.restaurant };
+          } else {
+            throw new Error('Restaurant not found for this admin account');
+          }
+        } catch (restaurantError) {
+          console.error('Restaurant verification error:', restaurantError);
+          
+          // Handle specific restaurant service errors
+          if (restaurantError.response?.status === 404) {
+            throw new Error('Restaurant not found for this admin account');
+          } else if (restaurantError.response?.data?.message) {
+            throw new Error(restaurantError.response.data.message);
+          } else {
+            throw restaurantError;
+          }
+        }
+      }
+  
+      // For non-restaurant-admin users
       setUser(data.user);
-      
-      // Show success message
       toast.success('Logged in successfully');
-      
-      // Redirect based on role
-      navigate(data.user.role === 'resturant_admin' ? '/dashboard' : '/');
-      
+      navigate('/dashboard');
       return data.user;
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.message || "Login failed";
+      // Clear auth on any error
+      localStorage.removeItem('authToken');
+      delete authApi.defaults.headers.common['Authorization'];
+      delete restaurantApi.defaults.headers.common['Authorization'];
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          "Login failed. Please try again.";
+      
       setAuthError(errorMessage);
       toast.error(errorMessage, { autoClose: 8000 });
       throw error;
@@ -86,35 +117,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const fetchRestaurantAdminDetails = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        const decoded = jwt.decode(token);
-        if (decoded?.restaurantId) {
-          const { data } = await api.get(`/restaurants/${decoded.restaurantId}`);
-          setUser(prev => ({ ...prev, restaurant: data }));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch restaurant details:', error);
-    }
-  };
-  
   const register = async (userData) => {
     setAuthError(null);
     setIsLoading(true);
     
     try {
-      const { data } = await api.post('/auth/register', userData);
+      const { data } = await authApi.post('/auth/register', userData);
       
       // Check for successful response structure
       if (data.token && data.user) {
         localStorage.setItem('authToken', data.token);
-        api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        authApi.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        restaurantApi.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
         setUser(data.user);
         toast.success(data.message || 'Registered successfully');
-        navigate('/');
+        navigate('/register');
       } else {
         throw new Error('Unexpected response format');
       }
@@ -132,7 +149,8 @@ export const AuthProvider = ({ children }) => {
   
   const logout = () => {
     localStorage.removeItem('authToken');
-    delete api.defaults.headers.common['Authorization'];
+    delete authApi.defaults.headers.common['Authorization'];
+    delete restaurantApi.defaults.headers.common['Authorization'];
     setUser(null);
     toast.success('Logged out successfully');
     navigate('/');

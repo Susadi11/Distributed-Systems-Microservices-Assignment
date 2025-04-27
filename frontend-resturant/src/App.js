@@ -15,6 +15,7 @@ import AddProduct from "./pages/AddProduct";
 import Registration from "./pages/Registration";
 import HomePage from "./pages/HomePage";
 import Profile from "./pages/Profile";
+import MainPage from "./pages/MainPage";
 
 
 
@@ -22,21 +23,23 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<MainPage/>} />
         {/* <Route path="/home" element={<Home />} /> */}
         <Route path="/signup" element={<Signup />} />
+        <Route path="/register" element={<Registration />} />
         <Route path="/login" element={<Login />} />
+        
         
 
      
-        <Route
+        {/* <Route
           path="/dashboard"
           element={
             <PrivateRoute allowedRoles={['resturant_admin']}>
               <Dashboard />
             </PrivateRoute>
           }
-        />
+        /> */}
         
         <Route
           path="/menu/list"
@@ -62,14 +65,14 @@ export default function App() {
             </PrivateRoute>
           }
         />
-         <Route
+         {/* <Route
           path="/register"
           element={
             <PrivateRoute allowedRoles={['resturant_admin']}>
               <Registration />
             </PrivateRoute>
           }
-        />
+        /> */}
         <Route
           path="/homepage"
           element={
