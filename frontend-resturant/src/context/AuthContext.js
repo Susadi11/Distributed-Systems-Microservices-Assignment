@@ -45,7 +45,6 @@ export const AuthProvider = ({ children }) => {
     
     checkAuth();
   }, []);
-
   const login = async (email, password) => {
     setAuthError(null);
     setIsLoading(true);
@@ -67,29 +66,40 @@ export const AuthProvider = ({ children }) => {
           
           // Check if restaurant exists and is approved
           if (restaurantResponse.data.restaurant) {
-            if (restaurantResponse.data.restaurant.status.toLowerCase() !== 'approved') {
-              throw new Error(restaurantResponse.data.message || 
-                `Your account is ${restaurantResponse.data.restaurant.status}. Please wait for approval.`);
+            const status = restaurantResponse.data.restaurant.status.toLowerCase();
+            
+            if (status !== 'approved') {
+              let errorMessage = "Your restaurant account is pending approval.";
+              
+              if (status === 'pending') {
+                errorMessage = "Your restaurant registration is under review. We'll notify you once approved.";
+              } else if (status === 'rejected') {
+                errorMessage = "Your restaurant registration was declined. Please contact support for more information.";
+              } else if (status === 'suspended') {
+                errorMessage = "Your restaurant account has been suspended. Please contact our support team.";
+              }
+              
+              throw new Error(errorMessage);
             }
             
             // If approved, set user with restaurant data
             setUser({ ...data.user, restaurant: restaurantResponse.data.restaurant });
-            toast.success('Logged in successfully');
+            toast.success('Welcome back! You are now logged in.');
             navigate('/homepage');
             return { ...data.user, restaurant: restaurantResponse.data.restaurant };
           } else {
-            throw new Error('Restaurant not found for this admin account');
+            throw new Error('Please complete your restaurant registration to get started.');
           }
         } catch (restaurantError) {
           console.error('Restaurant verification error:', restaurantError);
           
           // Handle specific restaurant service errors
           if (restaurantError.response?.status === 404) {
-            throw new Error('Restaurant not found for this admin account');
-          } else if (restaurantError.response?.data?.message) {
-            throw new Error(restaurantError.response.data.message);
+            throw new Error('Please register your restaurant to get started.');
+          } else if (restaurantError.message) {
+            throw restaurantError; // Already has a user-friendly message
           } else {
-            throw restaurantError;
+            throw new Error('We encountered an issue verifying your restaurant. Please try again.');
           }
         }
       }
@@ -97,7 +107,7 @@ export const AuthProvider = ({ children }) => {
       // For non-restaurant-admin users
       setUser(data.user);
       toast.success('Logged in successfully');
-      navigate('/dashboard');
+    
       return data.user;
     } catch (error) {
       // Clear auth on any error
@@ -105,17 +115,17 @@ export const AuthProvider = ({ children }) => {
       delete authApi.defaults.headers.common['Authorization'];
       delete restaurantApi.defaults.headers.common['Authorization'];
       
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          "Login failed. Please try again.";
+      const errorMessage = error.response?.data?.error || 
+                         error.message || 
+                         "Login failed. Please check your credentials and try again.";
       
       setAuthError(errorMessage);
-      toast.error(errorMessage, { autoClose: 8000 });
+      toast.error(errorMessage, { autoClose: 10000 });
       throw error;
     } finally {
       setIsLoading(false);
     }
-  };
+};
 
   const register = async (userData) => {
     setAuthError(null);

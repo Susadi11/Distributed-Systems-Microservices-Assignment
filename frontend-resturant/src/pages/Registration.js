@@ -127,6 +127,7 @@ const Registration = () => {
       }
   
       setSubmitSuccess(true);
+      navigate('/login');
       
       // Reset form
       setFormData({
@@ -156,39 +157,39 @@ const Registration = () => {
     }
   };
 
-  const handleGoToLogin = () => {
-    navigate('/login');
-  };
+  // const handleGoToLogin = () => {
+  //   navigate('/login');
+  // };
 
-  if (submitSuccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="h-8 w-8 text-green-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Waiting for Approval!</h2>
-          <p className="text-gray-600 mb-6">
-            Thank you for registering your restaurant. We'll review your application and give you access soon.
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={handleGoToLogin}
-              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
-            >
-              Go to Dashboard
-            </button>
-            <button
-              onClick={() => setSubmitSuccess(false)}
-              className="w-full py-2 px-4 border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-lg"
-            >
-              Register Another Restaurant
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (submitSuccess) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+  //       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+  //         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+  //           <Check className="h-8 w-8 text-green-600" />
+  //         </div>
+  //         <h2 className="text-2xl font-bold text-gray-800 mb-2">Waiting for Approval!</h2>
+  //         <p className="text-gray-600 mb-6">
+  //           Thank you for registering your restaurant. We'll review your application and give you access soon.
+  //         </p>
+  //         <div className="space-y-3">
+  //           <button
+  //             onClick={handleGoToLogin}
+  //             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
+  //           >
+  //             Go to Dashboard
+  //           </button>
+  //           <button
+  //             onClick={() => setSubmitSuccess(false)}
+  //             className="w-full py-2 px-4 border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-lg"
+  //           >
+  //             Register Another Restaurant
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Full Image with Overlay Text */}

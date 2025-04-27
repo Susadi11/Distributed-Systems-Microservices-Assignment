@@ -14,7 +14,7 @@ import MenuList from "./pages/MenuList";
 import AddProduct from "./pages/AddProduct";
 import Registration from "./pages/Registration";
 import HomePage from "./pages/HomePage";
-import Profile from "./pages/Profile";
+
 import MainPage from "./pages/MainPage";
 
 
@@ -57,14 +57,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
-         <Route
-          path="/profile"
-          element={
-            <PrivateRoute allowedRoles={['resturant_admin']}>
-              <Profile />
-            </PrivateRoute>
-          }
-        />
+         
          {/* <Route
           path="/register"
           element={

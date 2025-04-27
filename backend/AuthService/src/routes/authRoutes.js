@@ -6,7 +6,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 const axios = require("axios");
 
 const router = express.Router();
-const axios = require('axios');
+
 
 // Register Route
 router.post("/register", async (req, res) => {
@@ -124,29 +124,53 @@ router.post("/login", async (req, res) => {
 
 
       if (user.role === 'resturant_admin') {
-          try {
-              const restaurantServiceUrl = 'http://localhost:5556';
-              const restaurantResponse = await axios.get(
-                  `${restaurantServiceUrl}/api/restaurants/admin/${email}`
-              );
+        try {
+            const restaurantServiceUrl = 'http://localhost:5556';
+            const restaurantResponse = await axios.get(
+                `${restaurantServiceUrl}/api/restaurants/admin/${email}`
+            );
 
-              const restaurant = restaurantResponse.data.restaurant;
+            const restaurant = restaurantResponse.data.restaurant;
 
-              if (!restaurant) {
-                  return res.status(404).json({ error: "No restaurant found for this admin." });
-              }
+            if (!restaurant) {
+                return res.status(404).json({ 
+                    error: "Restaurant registration not found. Please register your restaurant first." 
+                });
+            }
 
-              if (restaurant.status !== 'approved') {
-                  return res.status(403).json({ error: "Your restaurant account is pending approval." });
-              }
-              payload.restaurantId = restaurant._id;
-              userDetails.restaurantId = restaurant._id;
+            if (restaurant.status.toLowerCase() !== 'approved') {
+                const statusMessage = restaurant.status.toLowerCase();
+                let friendlyMessage = "Your restaurant account is pending approval.";
+                
+                if (statusMessage === 'pending') {
+                    friendlyMessage = "Your restaurant registration is under review. Please wait for approval.";
+                } else if (statusMessage === 'rejected') {
+                    friendlyMessage = "Your restaurant registration was rejected. Please contact support.";
+                } else if (statusMessage === 'suspended') {
+                    friendlyMessage = "Your restaurant account is suspended. Please contact support.";
+                }
+                
+                return res.status(403).json({ 
+                    error: friendlyMessage,
+                    restaurantStatus: restaurant.status 
+                });
+            }
+            
+            payload.restaurantId = restaurant._id;
+            userDetails.restaurantId = restaurant._id;
 
-          } catch (error) {
-              console.error("Error checking restaurant status:", error);
-              return res.status(500).json({ error: "Failed to verify restaurant status." });
-          }
-      }
+        } catch (error) {
+            console.error("Error checking restaurant status:", error);
+            if (error.response?.status === 404) {
+                return res.status(404).json({ 
+                    error: "Restaurant registration not found. Please register your restaurant first." 
+                });
+            }
+            return res.status(500).json({ 
+                error: "We're having trouble verifying your restaurant. Please try again later." 
+            });
+        }
+    }
 
       const token = jwt.sign(
           payload,
