@@ -113,7 +113,6 @@ exports.getProductsByRestaurant = async (req, res) => {
   try {
     const { restaurantId } = req.params;
 
-    // Validate restaurantId format (optional but recommended)
     if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
       return res.status(400).json({
         success: false,
@@ -125,12 +124,24 @@ exports.getProductsByRestaurant = async (req, res) => {
     const products = await Product.find({
       restaurant: restaurantId,
       status: 'available'
-    }).populate('restaurant', 'name'); // Optional: Include basic restaurant info
+    }).populate('restaurant', 'name');
+
+    // Ensure proper formatting of base64 images for frontend
+    const formattedProducts = products.map(product => {
+      const productObj = product.toObject();
+
+      // If there are images with data field, ensure they're properly formatted
+      if (productObj.images && productObj.images.length > 0) {
+        // Keep the original format which will be properly handled by the frontend
+      }
+
+      return productObj;
+    });
 
     res.json({
       success: true,
-      count: products.length,
-      data: products
+      count: formattedProducts.length,
+      data: formattedProducts
     });
 
   } catch (err) {

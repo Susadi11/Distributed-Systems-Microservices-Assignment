@@ -19,6 +19,17 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: false,
     },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: false
+        },
+        coordinates: {
+            type: [Number],
+            required: false
+        }
+    },
     phone: {
         type: String,
         required: false,
@@ -43,5 +54,7 @@ UserSchema.pre('validate', function(next) {
     }
     next();
 });
+UserSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model("User", UserSchema);
+

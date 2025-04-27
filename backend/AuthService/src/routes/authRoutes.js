@@ -6,6 +6,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 const axios = require("axios");
 
 const router = express.Router();
+const axios = require('axios');
 
 // Register Route
 router.post("/register", async (req, res) => {
@@ -56,7 +57,10 @@ router.post("/register", async (req, res) => {
     // Create user
     const newUser = await User.create(userData);
 
-    // // Generate JWT token
+
+  
+
+
     const token = jwt.sign(
       { id: newUser._id, role: newUser.role },
       process.env.JWT_SECRET,
@@ -254,9 +258,27 @@ router.put('/update-address', authMiddleware(), async (req, res) => {
       return res.status(400).json({ error: "Address is required" });
     }
 
+    // Geocode the address using Google Maps API
+    const geocodeResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`
+    );
+
+    if (!geocodeResponse.data.results.length) {
+      return res.status(400).json({ error: "Could not geocode the address" });
+    }
+
+    const location = geocodeResponse.data.results[0].geometry.location;
+    const formattedAddress = geocodeResponse.data.results[0].formatted_address;
+
     const updatedUser = await User.findByIdAndUpdate(
         req.user.id,
-        { address },
+        {
+          address: formattedAddress,
+          location: {
+            type: 'Point',
+            coordinates: [location.lng, location.lat]
+          }
+        },
         { new: true }
     ).select('-password');
 
