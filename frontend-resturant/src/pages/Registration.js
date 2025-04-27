@@ -24,61 +24,13 @@ const Registration = () => {
   const [profileImageBase64, setProfileImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const [userId, setUserId] = useState(null);
   const [countryCode, setCountryCode] = useState('+94');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState(null);
-  const token = localStorage.getItem('authToken');
+  
 
-  // Function to decode JWT token
-  const parseJwt = (token) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      console.error('Error parsing JWT token:', e);
-      return null;
-    }
-  };
-
-  // Get user ID from token when component mounts
-  useEffect(() => {
-    if (token) {
-      try {
-        const decoded = parseJwt(token);
-        console.log('Decoded token:', decoded);
-
-        // Extract user ID from token
-        const extractedUserId = decoded.id || decoded.userId || decoded._id || decoded.sub;
-        console.log('Extracted user ID:', extractedUserId);
-
-        if (extractedUserId) {
-          setUserId(extractedUserId);
-        } else {
-          console.error('No user ID found in token');
-        }
-
-        // Pre-fill email if available in token
-        if (decoded.email) {
-          setFormData(prev => ({
-            ...prev,
-            email: decoded.email
-          }));
-        }
-      } catch (error) {
-        console.error('Error decoding token:', error);
-      }
-    }
-  }, [token]);
 
   const businessTypes = [
     'Restaurant',
@@ -145,26 +97,20 @@ const Registration = () => {
       return;
     }
   
-    if (!userId) {
-      setError("Authentication required. Please log in first.");
-      setIsSubmitting(false);
-      return;
-    }
+   
   
     try {
       // Create request data object including all form fields and Base64 image
       const requestData = {
         ...formData,
         countryCode,
-        userId,
         profileImageBase64: profileImageBase64 // Include Base64 string directly
       };
   
       const response = await fetch('http://localhost:5556/api/restaurants', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestData)
       });
@@ -177,7 +123,7 @@ const Registration = () => {
       const responseData = await response.json();
       
       if (responseData.data?.token) {
-        localStorage.setItem('authToken', responseData.data.token);
+        localStorage.setItem(responseData.data.token);
       }
   
       setSubmitSuccess(true);
@@ -211,7 +157,7 @@ const Registration = () => {
   };
 
   const handleGoToLogin = () => {
-    navigate('/homepage');
+    navigate('/login');
   };
 
   if (submitSuccess) {

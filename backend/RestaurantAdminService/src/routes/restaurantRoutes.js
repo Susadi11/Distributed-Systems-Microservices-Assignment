@@ -9,7 +9,10 @@ router.post('/',restaurantController.registerRestaurant);
 
 router.get('/', restaurantController.getRestaurants);
 
-
+// // Route to find restaurant by email
+// router.get('/email/:email', restaurantController.findRestaurantByEmail);
+router.get('/email/:email', restaurantController.findRestaurantByEmail);
+router.get('/admin/:email', restaurantController.findRestaurantByAdminEmail);
 
 router.get('/user/:userId', restaurantController.getRestaurantByUserId);
 

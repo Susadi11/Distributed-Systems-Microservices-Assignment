@@ -101,11 +101,6 @@ const restaurantSchema = new mongoose.Schema({
       message: 'You must accept the terms and conditions'
     }
   },
-  user:{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
   description: {
     type: String,
     trim: true

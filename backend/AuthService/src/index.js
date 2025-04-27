@@ -23,6 +23,7 @@ mongoose
     .connect(MONGOURI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000,
     })
     .then(() => {
         console.log("Connected to MongoDB");

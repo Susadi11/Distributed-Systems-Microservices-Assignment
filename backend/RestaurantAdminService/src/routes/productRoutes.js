@@ -6,7 +6,7 @@ const authMiddleware = require('../../../AuthService/src/middleware/authMiddlewa
 
 
 // Routes
-router.post('/',authMiddleware.verifyRestaurantAdmin, productController.createProduct);
+router.post('/',authMiddleware.authorize(['resturant_admin']), productController.createProduct);
 router.get('/', authMiddleware.verifyRestaurantAdmin,productController.getAllProducts);
 router.get('/:id', productController.getProduct);
 router.put('/:id', productController.updateProduct);

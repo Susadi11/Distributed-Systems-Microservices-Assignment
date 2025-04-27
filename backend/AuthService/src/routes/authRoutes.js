@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
+const axios = require("axios");
 
 const router = express.Router();
 
@@ -56,11 +57,11 @@ router.post("/register", async (req, res) => {
     const newUser = await User.create(userData);
 
     // // Generate JWT token
-    // const token = jwt.sign(
-    //   { id: newUser._id, role: newUser.role },
-    //   process.env.JWT_SECRET,
-    //   { expiresIn: "1h" }
-    // );
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     console.log("User created successfully:", newUser);
     res.status(201).json({
@@ -91,48 +92,74 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-
-    const user = await User.findOne({ email }).select("+password");
-    if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    const userWithoutPassword = user.toObject();
-    delete userWithoutPassword.password;
-
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        longitude: user.longitude,
-        latitude: user.latitude,
-        address: user.address,
-        phone: user.phone
+      if (!email || !password) {
+          return res.status(400).json({ error: "Email and password are required" });
       }
-    });
+
+      const user = await User.findOne({ email }).select("+password");
+      if (!user) {
+          return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+          return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      let payload = { id: user._id, role: user.role };
+      let userDetails = {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          longitude: user.longitude,
+          latitude: user.latitude,
+          address: user.address,
+          phone: user.phone
+      };
+
+
+      if (user.role === 'resturant_admin') {
+          try {
+              const restaurantServiceUrl = 'http://localhost:5556';
+              const restaurantResponse = await axios.get(
+                  `${restaurantServiceUrl}/api/restaurants/admin/${email}`
+              );
+
+              const restaurant = restaurantResponse.data.restaurant;
+
+              if (!restaurant) {
+                  return res.status(404).json({ error: "No restaurant found for this admin." });
+              }
+
+              if (restaurant.status !== 'approved') {
+                  return res.status(403).json({ error: "Your restaurant account is pending approval." });
+              }
+              payload.restaurantId = restaurant._id;
+              userDetails.restaurantId = restaurant._id;
+
+          } catch (error) {
+              console.error("Error checking restaurant status:", error);
+              return res.status(500).json({ error: "Failed to verify restaurant status." });
+          }
+      }
+
+      const token = jwt.sign(
+          payload,
+          process.env.JWT_SECRET,
+          { expiresIn: "1h" }
+      );
+
+      res.json({
+          token,
+          user: userDetails,
+      });
   } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({
-      error: "Server error",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+      console.error("Login Error:", error);
+      res.status(500).json({
+          error: "Server error",
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
   }
 });
 
@@ -258,6 +285,8 @@ router.get("/users/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+
 
 
 module.exports = router;
