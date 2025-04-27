@@ -1,34 +1,33 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require("cors");
+// index.js
+
+import express from "express";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import cors from "cors";
+
+import deliveryRoutes from "./routes/deliveryRouter.js"; 
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5555;
-const MONGOURI = process.env.MONGOURI;
+const PORT = process.env.PORT || 5554;
 
-app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
-  
-  app.use(express.json());
-  
-  // Import your routes
-//   app.use("/drivers", require("./routes/driverRoutes"));
-//   app.use("/deliveries", require("./routes/deliveryRoutes"));
-  
-  // Connect to MongoDB (separate DB inside same cluster)
-  mongoose.connect(MONGOURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .then(() => {
-    console.log("🚚 DeliveryService connected to MongoDB");
-    app.listen(PORT, () => console.log(`🚀 DeliveryService running on port ${PORT}`));
-  })
-  .catch(err => {
-    console.error("MongoDB connection error in DeliveryService:", err.message);
-    process.exit(1);
-  });
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// API Routes
+app.use("/api/deliveries", deliveryRoutes); // ✅ Mount the delivery routes
+
+// Database Connection
+mongoose.connect(process.env.MONGOURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log("✅ MongoDB Connected");
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+})
+.catch((error) => {
+  console.error("❌ MongoDB connection failed:", error.message);
+});
