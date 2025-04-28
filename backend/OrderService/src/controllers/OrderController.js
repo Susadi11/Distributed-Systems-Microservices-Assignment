@@ -5,6 +5,7 @@ const {
     publishOrderUpdated,
     publishOrderCancelled
 } = require('../services/orderEventPublisher');
+const mongoose = require('mongoose');
 
 exports.createOrder = async (req, res) => {
     try {
@@ -290,7 +291,8 @@ exports.updateOrderStatus = async (req, res) => {
             });
         }
 
-        const validStatuses = ['preparing', 'ready_for_delivery', 'out_for_delivery', 'delivered'];
+        // Update this list to match the schema enum values
+        const validStatuses = ['confirmed', 'finding-driver', 'preparing', 'picked-up', 'ready_for_delivery', 'out_for_delivery', 'delivered', 'canceled', 'pending', 'payment_pending'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -334,6 +336,88 @@ exports.updateOrderStatus = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to update order status',
+            error: error.message
+        });
+    }
+};
+
+exports.getOrdersByRestaurant = async (req, res) => {
+    try {
+        const { restaurantId } = req.params;
+        console.log('Received request for restaurant orders with ID:', restaurantId);
+
+        // Validate restaurant ID - more permissive validation
+        if (!restaurantId || restaurantId.trim() === '') {
+            console.log('Restaurant ID is empty or undefined');
+            return res.status(400).json({
+                success: false,
+                message: 'Restaurant ID is required'
+            });
+        }
+
+        let restaurantObjectId;
+        try {
+            // Try to convert to ObjectId
+            restaurantObjectId = new mongoose.Types.ObjectId(restaurantId);
+            console.log('Converted to valid ObjectId:', restaurantObjectId);
+        } catch (err) {
+            console.log('Failed to convert to ObjectId:', err.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid restaurant ID format'
+            });
+        }
+
+        // Get query parameters for filtering
+        const { status, startDate, endDate, limit = 20, page = 1 } = req.query;
+
+        // Build query object - check both main restaurant field and items.restaurant
+        const query = {
+            $or: [
+                { restaurant: restaurantObjectId },
+                { 'items.restaurant': restaurantObjectId }
+            ],
+            ...(status && { status }),
+            ...(startDate && { createdAt: { $gte: new Date(startDate) } }),
+            ...(endDate && { createdAt: { $lte: new Date(endDate) } })
+        };
+
+        console.log('Query for orders:', JSON.stringify(query));
+
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+
+        // Get orders with populated user information
+        const orders = await Order.find(query)
+            .sort({ createdAt: -1 }) // newest first
+            .skip(skip)
+            .limit(parseInt(limit))
+            .populate('user', 'name email phone'); // populate user info
+
+        console.log(`Found ${orders.length} orders for restaurant`);
+
+        // Get total count for pagination
+        const totalOrders = await Order.countDocuments(query);
+
+        // Format response
+        const formattedOrders = orders.map(order => ({
+            ...order.toObject(),
+            user: order.user || { name: order.userName } // fallback to userName if user not populated
+        }));
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            total: totalOrders,
+            page: parseInt(page),
+            pages: Math.ceil(totalOrders / limit),
+            orders: formattedOrders
+        });
+    } catch (error) {
+        console.error('Error fetching restaurant orders:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch orders',
             error: error.message
         });
     }

@@ -76,7 +76,7 @@ export default function App() {
           }
         />
         <Route
-          path="/orders"
+          path="/restaurant/:restaurantId/orders"
           element={
             <PrivateRoute allowedRoles={['resturant_admin']}>
               <RestaurantOrders />

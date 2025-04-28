@@ -9,9 +9,12 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const restaurantId = user?.restaurant?._id;
 
   return (
     <aside className="w-64 bg-gray-50 dark:bg-gray-800 p-4 border-r border-gray-200 dark:border-gray-700 h-screen">
@@ -27,12 +30,14 @@ const Sidebar = () => {
         </li>
 
         {/* Orders */}
-        <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-          <Link to="/orders" className="flex items-center gap-3">
-            <Home className="w-5 h-5" />
-            <span>Orders</span>
-          </Link>
-        </li>
+        {restaurantId && (
+            <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
+              <Link to={`/restaurant/${restaurantId}/orders`} className="flex items-center gap-3">
+                <Home className="w-5 h-5" /> {/* Add a ShoppingCart icon for Orders */}
+                <span>View Orders</span>
+              </Link>
+            </li>
+        )}
 
         {/* Menu with Subitems */}
         <li className="text-gray-700 dark:text-white">

@@ -2,8 +2,13 @@ import React from 'react';
 import DashboardNavBar from '../components/utility/DashboardNavBar';
 import { ShoppingCart, CheckCircle, Clock } from 'lucide-react';
 import Sidebar from '../components/utility/Sidebar';
+import { useAuth } from '../context/AuthContext';
 
 function HomePage() {
+
+    const { user } = useAuth();
+    const restaurantId = user?.restaurant?._id;
+
     return (
         <div className="flex h-screen">
             {/* Sidebar */}

@@ -9,5 +9,9 @@ router.post('/', orderController.createOrder);
 
 // Route to update payment status (authentication required)
 router.patch('/:orderId/payment-success', authMiddleware.authenticate, orderController.updatePaymentStatus);
+router.get('/restaurant/:restaurantId', orderController.getOrdersByRestaurant);
+
+// Add route for restaurant to update order status
+router.patch('/:orderId/status', orderController.updateOrderStatus);
 
 module.exports = router;
