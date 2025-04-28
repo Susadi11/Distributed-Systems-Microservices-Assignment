@@ -211,7 +211,8 @@ const Checkout = () => {
                 paymentMethod: selectedPaymentMethod,
                 restaurant: restaurantId,
                 estimatedDeliveryTime: new Date(Date.now() + 35 * 60 * 1000),
-                status: selectedPaymentMethod === 'cash' ? 'confirmed' : 'pending'
+                status: selectedPaymentMethod === 'cash' ? 'confirmed' : 'pending',
+                deliveryStatus: 'finding-driver' // Set default delivery status
             };
 
             // Log the order data to debug

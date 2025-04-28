@@ -132,8 +132,13 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['confirmed', 'finding-driver', 'preparing', 'picked-up', 'delivered', 'canceled', 'pending', 'payment_pending'],
+        enum: ['confirmed', 'preparing', 'canceled', 'pending', 'payment_pending'],
         default: 'confirmed'
+    },
+    deliveryStatus: {
+        type: String,
+        enum: ['finding-driver', 'picked-up', 'delivered'],
+        default: 'finding-driver'
     },
     estimatedDeliveryTime: {
         type: Date,

@@ -88,6 +88,11 @@ exports.createOrder = async (req, res) => {
             orderData.status = 'payment_pending';
         }
 
+        // Set default deliveryStatus if not provided
+        if (!orderData.deliveryStatus) {
+            orderData.deliveryStatus = 'finding-driver';
+        }
+
         // Create the new order with the data from checkout
         const newOrder = new Order(orderData);
 
@@ -106,6 +111,7 @@ exports.createOrder = async (req, res) => {
                     deliveryAddress: savedOrder.deliveryAddress,
                     status: savedOrder.status,
                     paymentStatus: savedOrder.paymentStatus,
+                    deliveryStatus: savedOrder.deliveryStatus,
                     createdAt: savedOrder.createdAt
                 });
 
@@ -187,6 +193,7 @@ exports.updatePaymentStatus = async (req, res) => {
                 orderId: updatedOrder._id,
                 newStatus: updatedOrder.status,
                 paymentStatus: updatedOrder.paymentStatus,
+                deliveryStatus: updatedOrder.deliveryStatus,
                 updatedAt: updatedOrder.updatedAt
             });
 
@@ -211,74 +218,6 @@ exports.updatePaymentStatus = async (req, res) => {
     }
 };
 
-exports.cancelOrder = async (req, res) => {
-    try {
-        const { orderId } = req.params;
-        const { cancellationReason } = req.body;
-
-        if (!orderId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Order ID is required'
-            });
-        }
-
-        const order = await Order.findById(orderId);
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found'
-            });
-        }
-
-        // Check if order can be cancelled (based on current status)
-        if (!['pending', 'confirmed', 'payment_pending'].includes(order.status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Order cannot be cancelled at this stage'
-            });
-        }
-
-        const updatedOrder = await Order.findByIdAndUpdate(
-            orderId,
-            {
-                status: 'cancelled',
-                cancellationReason: cancellationReason || 'Customer request',
-                cancelledAt: new Date()
-            },
-            { new: true }
-        );
-
-        // Publish order cancelled event to RabbitMQ
-        try {
-            await publishOrderCancelled({
-                orderId: updatedOrder._id,
-                restaurantId: updatedOrder.items[0].restaurant,
-                cancellationReason: updatedOrder.cancellationReason,
-                cancelledAt: updatedOrder.cancelledAt
-            });
-
-            console.log('Order cancelled event published successfully');
-        } catch (mqError) {
-            console.error('Failed to publish order cancelled event:', mqError);
-            // Implement fallback mechanism here
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Order cancelled successfully',
-            order: updatedOrder
-        });
-    } catch (error) {
-        console.error('Error cancelling order:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to cancel order',
-            error: error.message
-        });
-    }
-};
-
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -292,7 +231,7 @@ exports.updateOrderStatus = async (req, res) => {
         }
 
         // Update this list to match the schema enum values
-        const validStatuses = ['confirmed', 'finding-driver', 'preparing', 'picked-up', 'ready_for_delivery', 'out_for_delivery', 'delivered', 'canceled', 'pending', 'payment_pending'];
+        const validStatuses = ['confirmed', 'preparing', 'ready_for_delivery', 'out_for_delivery', 'canceled', 'pending', 'payment_pending'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -318,6 +257,7 @@ exports.updateOrderStatus = async (req, res) => {
             await publishOrderUpdated({
                 orderId: updatedOrder._id,
                 newStatus: updatedOrder.status,
+                deliveryStatus: updatedOrder.deliveryStatus,
                 updatedAt: updatedOrder.updatedAt
             });
 
@@ -369,7 +309,7 @@ exports.getOrdersByRestaurant = async (req, res) => {
         }
 
         // Get query parameters for filtering
-        const { status, startDate, endDate, limit = 20, page = 1 } = req.query;
+        const { status, deliveryStatus, startDate, endDate, limit = 20, page = 1 } = req.query;
 
         // Build query object - check both main restaurant field and items.restaurant
         const query = {
@@ -378,6 +318,7 @@ exports.getOrdersByRestaurant = async (req, res) => {
                 { 'items.restaurant': restaurantObjectId }
             ],
             ...(status && { status }),
+            ...(deliveryStatus && { deliveryStatus }),
             ...(startDate && { createdAt: { $gte: new Date(startDate) } }),
             ...(endDate && { createdAt: { $lte: new Date(endDate) } })
         };
