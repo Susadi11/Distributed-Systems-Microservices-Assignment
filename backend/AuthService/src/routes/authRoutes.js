@@ -7,9 +7,6 @@ const axios = require("axios");
 
 const router = express.Router();
 
-
-
-
 // Register Route
 router.post("/register", async (req, res) => {
   try {
@@ -58,10 +55,6 @@ router.post("/register", async (req, res) => {
 
     // Create user
     const newUser = await User.create(userData);
-
-
-  
-
 
     const token = jwt.sign(
       { id: newUser._id, role: newUser.role },
@@ -334,7 +327,56 @@ router.get("/users/:id", async (req, res) => {
   }
 });
 
+// Get available delivery personnel within a radius
+router.get("/delivery-personnel/available", async (req, res) => {
+  try {
+    // Extract query parameters
+    const { longitude, latitude, radius = 5 } = req.query;
+    
+    // Validate required parameters
+    if (!longitude || !latitude) {
+      return res.status(400).json({ error: "Longitude and latitude are required" });
+    }
 
+    // Convert string parameters to numbers
+    const long = parseFloat(longitude);
+    const lat = parseFloat(latitude);
+    const searchRadius = parseFloat(radius);
 
+    // Validate parameter formats
+    if (isNaN(long) || isNaN(lat) || isNaN(searchRadius)) {
+      return res.status(400).json({ error: "Invalid coordinate or radius format" });
+    }
+
+    // Find available delivery personnel within the specified radius
+    const availableDrivers = await User.find({
+      role: 'delivery_personnel',
+      'deliveryPersonnelDetails.status': 'Available',
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [long, lat]
+          },
+          $maxDistance: searchRadius * 1000 // Convert km to meters
+        }
+      }
+    }).select("-password");
+
+    res.json({
+      count: availableDrivers.length,
+      drivers: availableDrivers
+    });
+
+  } catch (error) {
+    console.error("Error fetching available delivery personnel:", error);
+    
+    if (error.name === 'MongoError' && error.code === 16755) {
+      return res.status(400).json({ error: "Location index not found. Make sure you have created a 2dsphere index on the location field." });
+    }
+    
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 module.exports = router;

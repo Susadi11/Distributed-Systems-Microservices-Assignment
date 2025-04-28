@@ -25,6 +25,11 @@ const DeliveryPersonnelDetailsSchema = new mongoose.Schema({
         type: String, 
         required: true 
     },
+    status: {
+        type: String, 
+        enum: ['Available', 'Unavailable'], 
+        default: 'Available' 
+    },
 });
 
 module.exports = DeliveryPersonnelDetailsSchema;

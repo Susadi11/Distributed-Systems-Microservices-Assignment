@@ -1,9 +1,6 @@
 const Restaurant = require('../models/Restaurant');
 const mongoose = require('mongoose');
 
-
-
-
 exports.registerRestaurant = async (req, res) => {
   try {
     // Validate required fields

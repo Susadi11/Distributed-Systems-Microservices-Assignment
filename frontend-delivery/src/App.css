@@ -36,3 +36,27 @@
     transform: rotate(360deg);
   }
 }
+
+#map-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+}
+
+.mapboxgl-map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.mapboxgl-ctrl-top-right {
+  margin-top: 10px;
+  margin-right: 10px;
+}
+
+.mapboxgl-ctrl-bottom-right {
+  margin-bottom: 10px;
+  margin-right: 10px;
+}
+
