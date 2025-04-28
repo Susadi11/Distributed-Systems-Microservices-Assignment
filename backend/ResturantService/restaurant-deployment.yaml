@@ -15,6 +15,16 @@ spec:
       containers:
         - name: restaurant-service
           image: restaurant-service:latest
-          imagePullPolicy: Never # important because your image is LOCAL
+          imagePullPolicy: Never   # Because we built the image locally
           ports:
             - containerPort: 5558
+          envFrom:
+            - configMapRef:
+                name: restaurant-service-config
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"

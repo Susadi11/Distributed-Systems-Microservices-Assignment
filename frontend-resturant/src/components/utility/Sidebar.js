@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import {
   Home,
   LayoutDashboard,
-  Users,
-  Mail,
+  ShoppingCart,
+  PlusCircle,
+  List,
+  Bell,
   Settings,
-  ChevronRight,
-  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -19,93 +20,90 @@ const Sidebar = () => {
   return (
     <aside className="w-64 bg-gray-50 dark:bg-gray-800 p-4 border-r border-gray-200 dark:border-gray-700 h-screen">
       <div className="text-xl font-semibold text-gray-800 dark:text-white mb-6">Admin Panel</div>
-      <ul className="space-y-4">
-
+      <ul className="space-y-2">
         {/* Dashboard */}
-        <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-          <Link to="/" className="flex items-center gap-3">
-            <LayoutDashboard className="w-5 h-5" />
-            <span>Home</span>
+        <li className="group">
+          <Link 
+            to="/homepage" 
+            className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+          >
+            <div className="flex items-center gap-3">
+              <LayoutDashboard className="w-5 h-5" />
+              <span>Dashboard</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
           </Link>
         </li>
 
         {/* Orders */}
         {restaurantId && (
-            <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-              <Link to={`/restaurant/${restaurantId}/orders`} className="flex items-center gap-3">
-                <Home className="w-5 h-5" /> {/* Add a ShoppingCart icon for Orders */}
-                <span>View Orders</span>
-              </Link>
-            </li>
+          <li className="group">
+            <Link 
+              to={`/restaurant/${restaurantId}/orders`} 
+              className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            >
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="w-5 h-5" />
+                <span>Orders</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+            </Link>
+          </li>
         )}
 
-        {/* Menu with Subitems */}
-        <li className="text-gray-700 dark:text-white">
-          <div
-            className="flex items-center justify-between hover:text-blue-500 cursor-pointer"
-            onClick={() => setMenuOpen(!menuOpen)}
+        {/* Add Product */}
+        <li className="group">
+          <Link 
+            to="/menu/add" 
+            className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
           >
             <div className="flex items-center gap-3">
-              <Home className="w-5 h-5" />
-              <span>Menu</span>
+              <PlusCircle className="w-5 h-5" />
+              <span>Add Product</span>
             </div>
-            {menuOpen ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </div>
-
-          {menuOpen && (
-            <ul className="ml-8 mt-2 space-y-2 text-sm">
-              <li>
-                <Link to="/menu/catalog" className="hover:text-blue-400 block">
-                  Menu Catalog
-                </Link>
-              </li>
-              <li>
-                <Link to="/menu/list" className="hover:text-blue-400 block">
-                  Menu List
-                </Link>
-              </li>
-              <li>
-                <Link to="/menu/add" className="hover:text-blue-400 block">
-                  Add Product
-                </Link>
-              </li>
-            </ul>
-          )}
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+          </Link>
         </li>
 
-        {/* Payment */}
-        <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-          <Link to="/payments" className="flex items-center gap-3">
-            <Users className="w-5 h-5" />
-            <span>Payment</span>
+        {/* Menu List */}
+        <li className="group">
+          <Link 
+            to="/menu/list" 
+            className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+          >
+            <div className="flex items-center gap-3">
+              <List className="w-5 h-5" />
+              <span>Menu List</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
           </Link>
         </li>
 
         {/* Notifications */}
-        <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-          <Link to="/notifications" className="flex items-center gap-3">
-            <Mail className="w-5 h-5" />
-            <span>Notification</span>
+        <li className="group">
+          <Link 
+            to="/notifications" 
+            className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+          >
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5" />
+              <span>Notifications</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
           </Link>
         </li>
 
         {/* Settings */}
-        <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-          <Link to="/settings" className="flex items-center gap-3">
-            <Settings className="w-5 h-5" />
-            <span>Settings</span>
-          </Link>
-        </li>
-
-         {/* Settings */}
-         <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-          <Link to="/register" className="flex items-center gap-3">
-            <Settings className="w-5 h-5" />
-            <span>Register Restaurant</span>
+        <li className="group">
+          <Link 
+            to="/settings" 
+            className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+          >
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5" />
+              <span>Settings</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
           </Link>
         </li>
       </ul>
