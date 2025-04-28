@@ -5,6 +5,7 @@ import { FaShoppingCart, FaUser, FaUserCircle } from 'react-icons/fa';
 import { IoRestaurant } from 'react-icons/io5';
 import { MdDeliveryDining, MdHome } from 'react-icons/md';
 import { useAuth } from '../../AuthContext';
+import { useCart } from '../../contexts/CartContext';
 
 // Reusable NavLink for desktop
 function NavLink({ to, icon, text }) {
@@ -40,13 +41,15 @@ export default function Navbar() {
 
     // Use the auth context instead of local state
     const { user, logout } = useAuth();
+    const { cart } = useCart();
+    const cartItemCount = cart?.items?.reduce((total, item) => total + item.quantity, 0) || 0;
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
     };
 
     const handleLogout = () => {
-        logout(); // Use the logout function from context
+        logout();
         navigate('/');
         setMobileMenuOpen(false);
     };
@@ -94,9 +97,11 @@ export default function Navbar() {
                             aria-label="Shopping Cart"
                         >
                             <FaShoppingCart className="h-5 w-5" />
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                                3
-                            </span>
+                            {cartItemCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                                    {cartItemCount}
+                                </span>
+                            )}
                         </Link>
 
                         {user ? (

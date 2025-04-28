@@ -123,6 +123,13 @@ const CheckoutForm = () => {
           }
         });
 
+        // Clear cart after successful payment
+        await axios.delete('http://localhost:5559/cart/clear', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+
         setMessage("✅ Payment successful! Redirecting to order confirmation...");
 
         setTimeout(() => {

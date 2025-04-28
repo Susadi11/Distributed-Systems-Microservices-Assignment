@@ -2,6 +2,9 @@ import React from "react";
 import { FaSearch } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
+// Hero image URL
+const heroImage = "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80"; // You can replace this with your own
+
 const offerData = [
     {
         id: 1,
@@ -9,9 +12,6 @@ const offerData = [
         description: "Enjoy half-price pizzas all week!",
         restaurant: "Pizzeria Delight",
         discount: "50%",
-        bgColor: "bg-gradient-to-br from-red-50 to-red-100",
-        textColor: "text-red-600",
-        borderColor: "border-red-200",
     },
     {
         id: 2,
@@ -19,9 +19,6 @@ const offerData = [
         description: "Buy one burger, get second free",
         restaurant: "Burger Haven",
         discount: "BOGO",
-        bgColor: "bg-gradient-to-br from-green-50 to-green-100",
-        textColor: "text-green-600",
-        borderColor: "border-green-200",
     },
     {
         id: 3,
@@ -29,9 +26,6 @@ const offerData = [
         description: "Exclusive sushi platter deal",
         restaurant: "Sushi Master",
         discount: "30%",
-        bgColor: "bg-gradient-to-br from-blue-50 to-blue-100",
-        textColor: "text-blue-600",
-        borderColor: "border-blue-200",
     },
     {
         id: 4,
@@ -39,79 +33,74 @@ const offerData = [
         description: "Delicious pasta dishes at a discount",
         restaurant: "Pasta Paradise",
         discount: "25%",
-        bgColor: "bg-gradient-to-br from-yellow-50 to-yellow-100",
-        textColor: "text-yellow-600",
-        borderColor: "border-yellow-200",
     },
 ];
 
 export function OffersSection() {
     return (
-        <section className="py-16 bg-gray-50">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="max-w-4xl mx-auto">
-                    {/* Search Bar */}
-                    <div className="bg-white rounded-2xl p-6 shadow-lg mb-12 border border-gray-100">
-                        <h3 className="text-2xl font-bold mb-6 text-gray-800">
-                            Find Amazing Deals Nearby
-                        </h3>
-                        <div className="flex items-center border-2 border-gray-200 rounded-xl p-3 bg-gray-50 focus-within:border-red-500 transition-all duration-300">
-                            <input
-                                type="text"
-                                placeholder="Search for restaurants or cuisines..."
-                                className="flex-grow border-none outline-none bg-transparent text-gray-700 placeholder-gray-400 text-lg"
-                            />
-                            <button className="bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg p-3 ml-2 hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-md hover:shadow-lg">
-                                <FaSearch className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
+        <section
+            className="relative py-32"
+            style={{
+                backgroundImage: `url(${heroImage})`,
+                backgroundAttachment: "fixed",
+                backgroundPosition: "center",
+                backgroundSize: "cover",
+                backgroundRepeat: "no-repeat",
+            }}
+        >
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-60"></div>
 
-                    {/* Offers Grid */}
-                    <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-gray-800 mb-6">
-                            Today's Best Offers
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {offerData.map((offer) => (
-                                <div
-                                    key={offer.id}
-                                    className={`p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 ${offer.bgColor} border ${offer.borderColor}`}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <div
-                                                className={`text-xl font-bold ${offer.textColor} mb-2`}
-                                            >
-                                                {offer.title}
-                                            </div>
-                                            <p className="text-gray-600 mb-3">
-                                                {offer.description}
-                                            </p>
-                                            <div className="text-sm font-semibold text-gray-700">
-                                                @{offer.restaurant}
-                                            </div>
-                                        </div>
-                                        <div
-                                            className={`text-4xl font-bold ${offer.textColor}`}
-                                        >
-                                            {offer.discount}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+            <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-5xl mx-auto text-white text-center mb-16">
+                    <h2 className="text-4xl sm:text-5xl font-extrabold mb-6">
+                        Find Amazing Deals Nearby
+                    </h2>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <input
+                            type="text"
+                            placeholder="Search restaurants, cuisines, deals..."
+                            className="flex-grow max-w-lg px-5 py-4 rounded-xl text-gray-700 text-lg bg-white bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all duration-300 w-full"
+                        />
+                        <button className="flex items-center justify-center bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl px-6 py-4 hover:from-red-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-2xl">
+                            <FaSearch className="h-6 w-6" />
+                        </button>
                     </div>
+                </div>
 
-                    {/* View All Button */}
-                    <div className="text-center">
-                        <Link
-                            to="/offers"
-                            className="inline-block px-8 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold rounded-full shadow-md hover:from-red-600 hover:to-orange-600 transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1"
+                {/* Offers Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {offerData.map((offer) => (
+                        <div
+                            key={offer.id}
+                            className="bg-white bg-opacity-80 backdrop-blur-md rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between"
                         >
-                            View All Offers
-                        </Link>
-                    </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800 mb-3">
+                                    {offer.title}
+                                </h3>
+                                <p className="text-gray-600 mb-4">
+                                    {offer.description}
+                                </p>
+                                <div className="text-sm font-semibold text-gray-700">
+                                    @{offer.restaurant}
+                                </div>
+                            </div>
+                            <div className="text-5xl font-extrabold text-right text-gray-700 mt-6">
+                                {offer.discount}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* View All Button */}
+                <div className="text-center mt-16">
+                    <Link
+                        to="/offers"
+                        className="inline-block px-10 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold rounded-full shadow-lg hover:shadow-2xl hover:from-red-600 hover:to-orange-600 transform hover:-translate-y-1 transition-all duration-300"
+                    >
+                        View All Offers
+                    </Link>
                 </div>
             </div>
         </section>

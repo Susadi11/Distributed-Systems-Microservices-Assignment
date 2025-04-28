@@ -124,6 +124,7 @@ export const CartProvider = ({ children }) => {
                 }
             });
 
+            // Reset local cart state
             setCart({ user: user?.id, items: [] });
             return { success: true, message: 'Cart cleared successfully' };
         } catch (err) {

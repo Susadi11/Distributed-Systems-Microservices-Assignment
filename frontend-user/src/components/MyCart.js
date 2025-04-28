@@ -95,7 +95,7 @@ const MyCart = () => {
                             </div>
                             <p className="text-gray-600 mb-4">Your cart is empty.</p>
                             <Link
-                                to="/menu"
+                                to="/restaurants"
                                 className="inline-flex items-center bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-md transition-colors"
                             >
                                 <ArrowLeft className="w-4 h-4 mr-2" />

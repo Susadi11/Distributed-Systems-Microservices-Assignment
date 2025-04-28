@@ -59,7 +59,7 @@ exports.createOrder = async (req, res) => {
                 return res.status(400).json({
                     success: false,
                     message: 'Validation error',
-                    details: Item at index ${i} is missing required fields,
+                    details: `Item at index ${i} is missing required fields`,
                     item
                 });
             }
