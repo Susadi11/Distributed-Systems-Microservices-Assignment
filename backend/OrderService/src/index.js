@@ -10,7 +10,7 @@ const MONGOURI = process.env.MONGOURI;
 // Add these middleware before routes
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
