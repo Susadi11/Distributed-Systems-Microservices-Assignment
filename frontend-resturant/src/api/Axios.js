@@ -1,5 +1,4 @@
-// api/Axios.js - Updated to support multiple services
-
+// api/Axios.js - Updated with orders endpoint
 import axios from 'axios';
 
 // Authentication service API instance
@@ -18,35 +17,28 @@ const restaurantApi = axios.create({
   },
 });
 
-// Request interceptor for auth service
-authApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+// Order service API instance
+const orderApi = axios.create({
+  baseURL: process.env.REACT_APP_ORDER_API_URL || 'http://localhost:5559/orders',
+  headers: {
+    'Content-Type': 'application/json',
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+});
 
-// Request interceptor for restaurant service
-restaurantApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+// Request interceptors for all services
+const requestInterceptor = (config) => {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+};
 
-// Response interceptor - same for both services
+[authApi, restaurantApi, orderApi].forEach(api => {
+  api.interceptors.request.use(requestInterceptor);
+});
+
+// Response interceptor - same for all services
 const responseInterceptor = (response) => response;
 const errorInterceptor = (error) => {
   if (error.response?.status === 401) {
@@ -56,8 +48,31 @@ const errorInterceptor = (error) => {
   return Promise.reject(error);
 };
 
-authApi.interceptors.response.use(responseInterceptor, errorInterceptor);
-restaurantApi.interceptors.response.use(responseInterceptor, errorInterceptor);
+[authApi, restaurantApi, orderApi].forEach(api => {
+  api.interceptors.response.use(responseInterceptor, errorInterceptor);
+});
 
-export { authApi, restaurantApi };
-export default authApi; // For backward compatibility
+// Restaurant Orders API methods
+export const getRestaurantOrders = async (status = '') => {
+  try {
+    const url = status ? `/restaurant?status=${status}` : '/restaurant';
+    const response = await orderApi.get(url);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching restaurant orders:', error);
+    throw error;
+  }
+};
+
+export const updateOrderStatus = async (orderId, newStatus) => {
+  try {
+    const response = await orderApi.patch(`/${orderId}/status`, { status: newStatus });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    throw error;
+  }
+};
+
+export { authApi, restaurantApi, orderApi };
+export default authApi;

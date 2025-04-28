@@ -16,6 +16,7 @@ import Registration from "./pages/Registration";
 import HomePage from "./pages/HomePage";
 
 import MainPage from "./pages/MainPage";
+import RestaurantOrders from "./pages/RestaurantOrders";
 
 
 
@@ -71,6 +72,14 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={['resturant_admin']}>
               <HomePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <PrivateRoute allowedRoles={['resturant_admin']}>
+              <RestaurantOrders />
             </PrivateRoute>
           }
         />

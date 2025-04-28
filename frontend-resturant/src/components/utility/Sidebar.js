@@ -28,7 +28,7 @@ const Sidebar = () => {
 
         {/* Orders */}
         <li className="flex items-center justify-between text-gray-700 dark:text-white hover:text-blue-500 cursor-pointer">
-          <Link to="/dashboard" className="flex items-center gap-3">
+          <Link to="/orders" className="flex items-center gap-3">
             <Home className="w-5 h-5" />
             <span>Orders</span>
           </Link>

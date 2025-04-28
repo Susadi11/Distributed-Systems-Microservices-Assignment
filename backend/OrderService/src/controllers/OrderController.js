@@ -57,3 +57,92 @@ exports.createOrder = async (req, res) => {
         });
     }
 };
+// controllers/orderController.js
+exports.getRestaurantOrders = async (req, res) => {
+    try {
+        const restaurantId = req.user.restaurantId;
+        const { status } = req.query;
+
+        const query = { 
+            'items.restaurant': restaurantId,
+            ...(status && { status })
+        };
+
+        const orders = await Order.find(query)
+            // Remove .populate('user') completely
+            .populate('items.productId', 'name')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            orders
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch orders',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+exports.updateOrderStatus = async (req, res) => {
+    try {
+        const restaurantId = req.user.restaurantId;
+        const { orderId } = req.params;
+        const { status } = req.body;
+
+        if (!restaurantId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied. Restaurant association required.'
+            });
+        }
+
+        // Verify the order belongs to this restaurant
+        const order = await Order.findOne({
+            _id: orderId,
+            'items.restaurant': restaurantId
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found or not associated with your restaurant'
+            });
+        }
+
+        // Validate status transition
+        const validTransitions = {
+            'confirmed': ['preparing', 'canceled'],
+            'preparing': ['picked-up', 'canceled'],
+            'picked-up': ['delivered'],
+            // Other status transitions as needed
+        };
+
+        if (!validTransitions[order.status]?.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status transition from ${order.status} to ${status}`
+            });
+        }
+
+        order.status = status;
+        await order.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Order status updated successfully',
+            order
+        });
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update order status',
+            error: error.message
+        });
+    }
+};
