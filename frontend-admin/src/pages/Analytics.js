@@ -93,9 +93,9 @@ function Analytics() {
       
       doc.setFontSize(12);
       doc.setTextColor(60, 60, 60);
-      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 390, 40);
-      doc.text(`Average Monthly Revenue: $${avgRevenue.toFixed(2)}`, 390, 55);
-      doc.text(`Highest Month: ${highestMonth.month} ($${highestMonth.revenue.toFixed(2)})`, 390, 70);
+      doc.text(`Total Revenue: Rs.${totalRevenue.toFixed(2)}`, 390, 40);
+      doc.text(`Average Monthly Revenue: Rs.${avgRevenue.toFixed(2)}`, 390, 55);
+      doc.text(`Highest Month: ${highestMonth.month} (Rs.${highestMonth.revenue.toFixed(2)})`, 390, 70);
   
       // Main table with enhanced styling
       autoTable(doc, {
@@ -107,7 +107,7 @@ function Analytics() {
               styles: { halign: 'center', fillColor: [220, 38, 38] } 
             },
             { 
-              content: "Revenue ($)", 
+              content: "Revenue (RS)", 
               styles: { halign: 'center', fillColor: [220, 38, 38] } 
             },
             { 
@@ -313,7 +313,7 @@ function Analytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Revenue"
-          value={`$${(totalTransaction / 100).toFixed(2)}`}
+          value={`RS.${(totalTransaction / 100).toFixed(2)}`}
           icon={<DollarSign className="h-6 w-6 text-green-600" />}
           color="green"
           trend="up"

@@ -121,7 +121,7 @@ function Home() {
         />
         <StatsCard
           title="Total Revenue"
-          value={`$${(totalTransaction / 100).toLocaleString()}`}
+          value={`RS.${(totalTransaction / 100).toLocaleString()}`}
           icon={<DollarSign className="h-8 w-8" />}
           color="purple"
           trend={revenueGrowth >= 0 ? "up" : "down"}
@@ -163,7 +163,7 @@ function Home() {
                 <YAxis 
                   tick={{ fill: '#6b7280' }}
                   axisLine={false}
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => `Rs.${value}`}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -171,7 +171,7 @@ function Home() {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     border: 'none'
                   }}
-                  formatter={(value) => [`$${value}`, 'Revenue']}
+                  formatter={(value) => [`Rs.${value}`, 'Revenue']}
                 />
                 <Line
                   type="monotone"
@@ -251,7 +251,7 @@ function Home() {
               <YAxis 
                 tick={{ fill: '#6b7280' }}
                 axisLine={false}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `Rs.${value}`}
               />
               <Tooltip 
                 contentStyle={{
@@ -259,7 +259,7 @@ function Home() {
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   border: 'none'
                 }}
-                formatter={(value) => [`$${value}`, 'Revenue']}
+                formatter={(value) => [`Rs.${value}`, 'Revenue']}
               />
               <Bar
                 dataKey="revenue"
