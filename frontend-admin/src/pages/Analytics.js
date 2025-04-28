@@ -30,10 +30,10 @@ function Analytics() {
           paymentsRes
         ] = await Promise.all([
           axios.get("http://localhost:5555/auth/user-role-distribution"),
-          axios.get("http://localhost:5552/monthly-revenue"),
+          axios.get("http://localhost:8080/api/payments/monthly-revenue"),
           axios.get("http://localhost:5556/api/restaurants"),
           axios.get("http://localhost:5555/auth/users"),
-          axios.get("http://localhost:5552/all-payments")
+          axios.get("http://localhost:8080/api/payments/all-payments")
         ]);
 
         setUserDistribution(userRolesRes.data);

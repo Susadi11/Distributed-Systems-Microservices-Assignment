@@ -14,7 +14,7 @@ const Transactions = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const res = await axios.get('http://localhost:5552/payment-intents');
+        const res = await axios.get('http://localhost:8080/api/payments/payment-intents');
         setPayments(res.data);
         setLoading(false);
       } catch (err) {
