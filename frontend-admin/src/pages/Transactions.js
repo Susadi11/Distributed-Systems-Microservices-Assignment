@@ -62,6 +62,8 @@ const Transactions = () => {
 
   const filteredPayments = sortedPayments.filter(payment =>
     payment.paymentIntentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (payment.user && payment.user.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (payment.orderId && payment.orderId.toString().toLowerCase().includes(searchTerm.toLowerCase())) ||
     payment.currency.toLowerCase().includes(searchTerm.toLowerCase()) ||
     payment.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (payment.paymentMethod && payment.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -103,7 +105,7 @@ const Transactions = () => {
     doc.setFontSize(12);
     doc.setTextColor(60, 60, 60);
     doc.text(`Total Transactions: ${payments.length}`, 450, 100);
-    doc.text(`Total Amount: $${totalAmount.toFixed(2)}`, 450, 115);
+    doc.text(`Total Amount: Rs.${totalAmount.toFixed(2)}`, 450, 115);
     doc.text(`Success Rate: ${((successCount / payments.length) * 100).toFixed(1)}%`, 450, 130);
   
     // Table with improved styling
@@ -112,7 +114,9 @@ const Transactions = () => {
       head: [
         [
           { content: 'Payment ID', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
-          { content: 'Amount (USD)', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
+          { content: 'User ID', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
+          { content: 'Order ID', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
+          { content: 'Amount (LKR)', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
           { content: 'Currency', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
           { content: 'Status', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
           { content: 'Method', styles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] } },
@@ -121,7 +125,9 @@ const Transactions = () => {
       ],
       body: payments.map(p => [
         p.paymentIntentId,
-        { content: `$${(p.amount / 100).toFixed(2)}`, styles: { halign: 'right' } },
+        p.user || '-',
+        p.orderId || '-',
+        { content: `Rs.${(p.amount / 100).toFixed(2)}`, styles: { halign: 'right' } },
         p.currency.toUpperCase(),
         { 
           content: p.status, 
@@ -136,18 +142,20 @@ const Transactions = () => {
         new Date(p.createdAt).toLocaleDateString()
       ]),
       styles: {
-        fontSize: 10,
-        cellPadding: 8,
+        fontSize: 8, // Smaller font to fit more columns
+        cellPadding: 6,
         halign: 'left',
         valign: 'middle',
       },
       columnStyles: {
-        0: { cellWidth: 140 },
-        1: { cellWidth: 80, halign: 'right' },
-        2: { cellWidth: 60 },
-        3: { cellWidth: 80 },
-        4: { cellWidth: 80 },
-        5: { cellWidth: 100 }
+        0: { cellWidth: 100 },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 70 },
+        3: { cellWidth: 60, halign: 'right' },
+        4: { cellWidth: 50 },
+        5: { cellWidth: 60 },
+        6: { cellWidth: 60 },
+        7: { cellWidth: 80 }
       },
       alternateRowStyles: {
         fillColor: [249, 250, 251],
@@ -205,7 +213,6 @@ const Transactions = () => {
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
-           
           </div>
         </div>
 
@@ -230,7 +237,7 @@ const Transactions = () => {
           <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-red-500">
             <h3 className="text-sm font-medium text-gray-500">Total Revenue</h3>
             <p className="text-2xl font-bold text-gray-800">
-              ${(payments.reduce((sum, p) => sum + (p.amount / 100), 0)).toFixed(2)}
+              Rs.{(payments.reduce((sum, p) => sum + (p.amount / 100), 0)).toFixed(2)}
             </p>
           </div>
         </div>
@@ -252,6 +259,24 @@ const Transactions = () => {
                     >
                       <div className="flex items-center gap-1">
                         Payment ID
+                        <ArrowUpDown size={14} className="text-gray-400" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('user')}
+                    >
+                      <div className="flex items-center gap-1">
+                        User ID
+                        <ArrowUpDown size={14} className="text-gray-400" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      onClick={() => handleSort('orderId')}
+                    >
+                      <div className="flex items-center gap-1">
+                        Order ID
                         <ArrowUpDown size={14} className="text-gray-400" />
                       </div>
                     </th>
@@ -303,8 +328,14 @@ const Transactions = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {p.paymentIntentId}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {p.user || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {p.orderId || '-'}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                          ${(p.amount / 100).toFixed(2)}
+                          Rs{(p.amount / 100).toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 uppercase">
                           {p.currency}
@@ -326,7 +357,7 @@ const Transactions = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
                         No transactions found
                       </td>
                     </tr>

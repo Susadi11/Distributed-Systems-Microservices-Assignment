@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 
 const createPaymentIntent = async (req, res) => {
   try {
-    const { orderId ,amount, currency = 'usd',paymentMethod, userId } = req.body;
+    const { orderId ,amount, currency = 'lkr',paymentMethod, userId } = req.body;
 
     // 1. Create PaymentIntent with Stripe
     const paymentIntent = await stripe.paymentIntents.create({
@@ -43,8 +43,52 @@ const createPaymentIntent = async (req, res) => {
 //get all payment intents
 const getAllPaymentIntents = async (req, res) => {
   try {
+   
     const payments = await Payment.find();
-    res.status(200).json(payments);
+    
+   
+    const fetchPaymentIntent = async (paymentIntentId, retries = 3, delay = 1000) => {
+      try {
+        return await stripe.paymentIntents.retrieve(paymentIntentId);
+      } catch (err) {
+        if (err.type === 'StripeRateLimitError' && retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchPaymentIntent(paymentIntentId, retries - 1, delay * 2);
+        }
+        throw err;
+      }
+    };
+
+    // Process payments in batches to avoid rate limits
+    const batchSize = 5; 
+    const paymentsWithCurrentStatus = [];
+    
+    for (let i = 0; i < payments.length; i += batchSize) {
+      const batch = payments.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (payment) => {
+          try {
+            const paymentIntent = await fetchPaymentIntent(payment.paymentIntentId);
+            
+  
+            if (payment.status !== paymentIntent.status) {
+              payment.status = paymentIntent.status;
+              await payment.save();
+            }
+            
+            return payment;
+          } catch (err) {
+            console.error(`Error processing payment ${payment._id}:`, err.message);
+            return payment; 
+          }
+        })
+      );
+      
+      paymentsWithCurrentStatus.push(...batchResults);
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
+    }
+    
+    res.status(200).json(paymentsWithCurrentStatus);
   } catch (error) {
     console.error('Error fetching payment intents:', error);
     res.status(500).json({ error: error.message });

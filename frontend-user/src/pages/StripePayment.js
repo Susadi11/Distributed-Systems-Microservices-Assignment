@@ -91,7 +91,7 @@ const CheckoutForm = () => {
           {
             orderId,
             amount: Math.round(total * 100),
-            currency: "usd",
+            currency: "lkr",
             paymentMethod: "card",
             userId
           }
