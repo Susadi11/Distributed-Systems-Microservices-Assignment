@@ -29,10 +29,10 @@ function Analytics() {
           usersRes,
           paymentsRes
         ] = await Promise.all([
-          axios.get("http://localhost:5555/auth/user-role-distribution"),
+          axios.get("http://localhost:8080/api/auth/auth/user-role-distribution"),
           axios.get("http://localhost:8080/api/payments/monthly-revenue"),
-          axios.get("http://localhost:5556/api/restaurants"),
-          axios.get("http://localhost:5555/auth/users"),
+          axios.get("http://localhost:8080/api/restaurant_admin/api/restaurants"),
+          axios.get("http://localhost:8080/api/auth/auth/users"),
           axios.get("http://localhost:8080/api/payments/all-payments")
         ]);
 

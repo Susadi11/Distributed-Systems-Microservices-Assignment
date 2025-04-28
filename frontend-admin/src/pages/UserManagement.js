@@ -26,7 +26,7 @@ function UserManagement() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get("http://localhost:5555/auth/users");
+        const response = await axios.get("http://localhost:8080/api/auth/auth/users");
         setUsers(response.data);
       } catch (error) {
         console.error("Failed to fetch users:", error.message);
@@ -45,7 +45,7 @@ function UserManagement() {
   const handleDelete = async () => {
     try {
       await axios.delete(
-        `http://localhost:5555/auth/users/${selectedUser._id}`
+        `http://localhost:8080/api/auth/auth/users/${selectedUser._id}`
       );
       setUsers(users.filter((user) => user._id !== selectedUser._id));
       setIsDeleteModalOpen(false);

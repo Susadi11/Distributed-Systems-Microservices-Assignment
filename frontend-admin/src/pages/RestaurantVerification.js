@@ -24,7 +24,7 @@ const RestaurantVerification = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:5551/api/admin/proxy/restaurants'); 
+      const res = await axios.get('http://localhost:8080/api/restaurant_admin/api/restaurants/'); 
   
       console.log('Full API response:', res.data); // Debugging
       const transformRestaurant = (restaurant) => ({
@@ -62,7 +62,7 @@ const RestaurantVerification = () => {
 
   const approveRestaurant = async (id) => {
     try {
-      const res = await axios.put(`http://localhost:5551/api/admin/proxy/restaurants/${id}/approve`);
+      const res = await axios.put(`http://localhost:8080/api/restaurant_admin/api/restaurants/${id}/approve`);
       setVerifiedRestaurants((prev) => [
         ...prev,
         { ...res.data, status: 'approved' },
@@ -79,7 +79,7 @@ const RestaurantVerification = () => {
   const rejectRestaurant = async (id) => {
     if (!rejectionReason.trim()) return;
     try {
-      const res = await axios.put(`http://localhost:5551/api/admin/proxy/restaurants/${id}/reject`, {
+      const res = await axios.put(`http://localhost:8080/api/restaurant_admin/api/restaurants/${id}/reject`, {
         rejectionReason,
       });
       setRejectedRestaurants((prev) => [
