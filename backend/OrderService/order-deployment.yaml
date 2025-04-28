@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: order-service:latest
+          imagePullPolicy: Never  # because we use local image
+          ports:
+            - containerPort: 5559
+          env:
+            - name: MONGOURI
+              value: "mongodb://your-mongodb-service:27017/orderdb"
+            - name: FRONTEND_URL
+              value: "http://localhost:3000"
+            - name: RABBITMQ_URL
+              value: "amqp://your-rabbitmq-service:5672"
