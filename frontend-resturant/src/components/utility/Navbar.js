@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiMenu, FiX } from 'react-icons/fi';
 import { FaShoppingCart } from 'react-icons/fa'; // Import shopping cart icon
+// import { useAuth } from '../../context/AuthContext';
+
 
 export default function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    // const { user } = useAuth();
+    // const restaurantId = user?.restaurant?._id;
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
