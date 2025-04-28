@@ -1,5 +1,10 @@
 const Order = require('../models/OrderModel');
-const User = require('../../../AuthService/src/models/User'); // Import User model to access user data
+const User = require('../../../AuthService/src/models/User');
+const {
+    publishOrderCreated,
+    publishOrderUpdated,
+    publishOrderCancelled
+} = require('../services/orderEventPublisher');
 
 exports.createOrder = async (req, res) => {
     try {
@@ -89,6 +94,26 @@ exports.createOrder = async (req, res) => {
         try {
             const savedOrder = await newOrder.save();
 
+            // Publish order created event to RabbitMQ
+            try {
+                await publishOrderCreated({
+                    orderId: savedOrder._id,
+                    userId: savedOrder.user,
+                    restaurantId: savedOrder.items[0].restaurant, // Assuming single restaurant per order
+                    items: savedOrder.items,
+                    totalAmount: savedOrder.totalAmount,
+                    deliveryAddress: savedOrder.deliveryAddress,
+                    status: savedOrder.status,
+                    paymentStatus: savedOrder.paymentStatus,
+                    createdAt: savedOrder.createdAt
+                });
+
+                console.log('Order created event published successfully');
+            } catch (mqError) {
+                console.error('Failed to publish order created event:', mqError);
+                // Implement fallback mechanism here (e.g., store in DB for later retry)
+            }
+
             // Return success response that matches what the frontend expects
             res.status(201).json({
                 success: true,
@@ -126,7 +151,6 @@ exports.createOrder = async (req, res) => {
     }
 };
 
-// Add a new endpoint to update order payment status
 exports.updatePaymentStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -156,6 +180,21 @@ exports.updatePaymentStatus = async (req, res) => {
             });
         }
 
+        // Publish order updated event to RabbitMQ
+        try {
+            await publishOrderUpdated({
+                orderId: updatedOrder._id,
+                newStatus: updatedOrder.status,
+                paymentStatus: updatedOrder.paymentStatus,
+                updatedAt: updatedOrder.updatedAt
+            });
+
+            console.log('Order updated event published successfully');
+        } catch (mqError) {
+            console.error('Failed to publish order updated event:', mqError);
+            // Implement fallback mechanism here
+        }
+
         res.status(200).json({
             success: true,
             message: 'Payment status updated successfully',
@@ -166,6 +205,135 @@ exports.updatePaymentStatus = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to update payment status',
+            error: error.message
+        });
+    }
+};
+
+exports.cancelOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { cancellationReason } = req.body;
+
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order ID is required'
+            });
+        }
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Check if order can be cancelled (based on current status)
+        if (!['pending', 'confirmed', 'payment_pending'].includes(order.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order cannot be cancelled at this stage'
+            });
+        }
+
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            {
+                status: 'cancelled',
+                cancellationReason: cancellationReason || 'Customer request',
+                cancelledAt: new Date()
+            },
+            { new: true }
+        );
+
+        // Publish order cancelled event to RabbitMQ
+        try {
+            await publishOrderCancelled({
+                orderId: updatedOrder._id,
+                restaurantId: updatedOrder.items[0].restaurant,
+                cancellationReason: updatedOrder.cancellationReason,
+                cancelledAt: updatedOrder.cancelledAt
+            });
+
+            console.log('Order cancelled event published successfully');
+        } catch (mqError) {
+            console.error('Failed to publish order cancelled event:', mqError);
+            // Implement fallback mechanism here
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order cancelled successfully',
+            order: updatedOrder
+        });
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to cancel order',
+            error: error.message
+        });
+    }
+};
+
+exports.updateOrderStatus = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { status } = req.body;
+
+        if (!orderId || !status) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order ID and status are required'
+            });
+        }
+
+        const validStatuses = ['preparing', 'ready_for_delivery', 'out_for_delivery', 'delivered'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status value'
+            });
+        }
+
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            { status },
+            { new: true }
+        );
+
+        if (!updatedOrder) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Publish order updated event to RabbitMQ
+        try {
+            await publishOrderUpdated({
+                orderId: updatedOrder._id,
+                newStatus: updatedOrder.status,
+                updatedAt: updatedOrder.updatedAt
+            });
+
+            console.log('Order status update event published successfully');
+        } catch (mqError) {
+            console.error('Failed to publish order status update event:', mqError);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order status updated successfully',
+            order: updatedOrder
+        });
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update order status',
             error: error.message
         });
     }

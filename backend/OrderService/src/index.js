@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const rabbitMQInstance = require('./utils/rabbitmq'); // Changed import
 
 const app = express();
 const PORT = process.env.PORT || 5559;
@@ -16,8 +17,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const cartRoutes = require("../src/routes/CartRoutes");
-const orderRoutes = require("../src/routes/OrderRoute");
+// Initialize RabbitMQ connection
+rabbitMQInstance.connect().then(() => {
+    console.log('RabbitMQ connected successfully');
+}).catch(err => {
+    console.error('Failed to connect to RabbitMQ:', err);
+});
+
+const cartRoutes = require("./routes/CartRoutes");
+const orderRoutes = require("./routes/OrderRoute");
 
 mongoose
     .connect(MONGOURI)
