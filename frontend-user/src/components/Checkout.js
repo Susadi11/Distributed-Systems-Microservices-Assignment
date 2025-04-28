@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Check, Gift, MapPin, Clock, ChevronDown, Info, ChevronRight, CreditCard, Plus  } from 'lucide-react';
-import { useNavigate, useLocation  } from 'react-router-dom';
+import { Check, Gift, MapPin, Clock, ChevronDown, Info, ChevronRight, CreditCard, Plus } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useCart } from '../contexts/CartContext';
 import LoadingSpinner from '../components/LoadingSpinner';
-import axios from 'axios'; // Add this import
+import axios from 'axios';
 
-// Initialize Mapbox
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const Checkout = () => {
@@ -25,10 +24,9 @@ const Checkout = () => {
     const marker = useRef(null);
     const location = useLocation();
 
-    // Default to SLIIT coordinates if no user location
     const [position, setPosition] = useState(
         user?.location?.coordinates
-            ? [user.location.coordinates[0], user.location.coordinates[1]] // [lng, lat]
+            ? [user.location.coordinates[0], user.location.coordinates[1]]
             : [79.9730, 6.9147]
     );
 
@@ -40,18 +38,15 @@ const Checkout = () => {
 
     const navigate = useNavigate();
 
-    // Calculate delivery fee based on subtotal
     const calculateDeliveryFee = (subtotal) => {
-        const baseFee = 100; // Base delivery fee
+        const baseFee = 100;
         if (subtotal <= 500) {
             return baseFee;
         } else {
-            // 10% of subtotal above 500, added to base fee
             return baseFee + (0.1 * (subtotal - 500));
         }
     };
 
-    // Calculate order summary from cart
     const calculateOrderSummary = () => {
         if (!cart || !cart.items) {
             return {
@@ -66,8 +61,8 @@ const Checkout = () => {
         }
 
         const subtotal = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.08; // 8% tax
-        const promotion = usePromotion ? Math.min(500, subtotal * 0.1) : 0; // 10% off up to 500
+        const tax = subtotal * 0.08;
+        const promotion = usePromotion ? Math.min(500, subtotal * 0.1) : 0;
         const deliveryFee = calculateDeliveryFee(subtotal);
 
         return {
@@ -81,21 +76,19 @@ const Checkout = () => {
         };
     };
 
-    // Fetch cart data when component mounts
     useEffect(() => {
         if (user) {
             fetchCart();
         }
     }, [user, fetchCart]);
 
-    // Initialize map when component mounts
     useEffect(() => {
         if (!mapboxgl.accessToken) {
             console.error("Mapbox token not configured");
             return;
         }
 
-        if (map.current) return; // Initialize map only once
+        if (map.current || !mapContainer.current) return;
 
         map.current = new mapboxgl.Map({
             container: mapContainer.current,
@@ -104,16 +97,13 @@ const Checkout = () => {
             zoom: 15
         });
 
-        // Add navigation controls
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-        // Create initial marker
         marker.current = new mapboxgl.Marker({ color: '#FF0000' })
             .setLngLat(position)
             .setPopup(new mapboxgl.Popup().setHTML(`<strong>${address.name}</strong><br>${address.description}`))
             .addTo(map.current);
 
-        // Cleanup on unmount
         return () => {
             if (map.current) {
                 map.current.remove();
@@ -122,7 +112,6 @@ const Checkout = () => {
         };
     }, []);
 
-    // Update marker and map when position changes
     useEffect(() => {
         if (map.current && marker.current) {
             marker.current.setLngLat(position);
@@ -131,13 +120,11 @@ const Checkout = () => {
                 essential: true
             });
 
-            // Update popup content
             const popup = new mapboxgl.Popup().setHTML(`<strong>${address.name}</strong><br>${address.description}`);
             marker.current.setPopup(popup);
         }
     }, [position, address]);
 
-    // Update position when user data changes
     useEffect(() => {
         if (user?.location?.coordinates) {
             setPosition([user.location.coordinates[0], user.location.coordinates[1]]);
@@ -151,7 +138,6 @@ const Checkout = () => {
         }
     }, [user]);
 
-    // Redirect to cart if it's empty
     useEffect(() => {
         if (cart && cart.items && cart.items.length === 0) {
             navigate('/cart');
@@ -164,7 +150,120 @@ const Checkout = () => {
     const total = orderSummary.subtotal + orderSummary.tax - orderSummary.promotion +
         orderSummary.deliveryFee + orderSummary.serviceFee - orderSummary.uberOneSavings;
 
-    // Loading state
+    // In Checkout.js, modify the handlePlaceOrder function:
+
+    const handlePlaceOrder = async () => {
+        try {
+            if (!user) {
+                alert('Please login to place an order');
+                navigate('/login');
+                return;
+            }
+
+            if (!cart || !cart.items || cart.items.length === 0) {
+                alert('Your cart is empty. Please add items before checkout.');
+                return;
+            }
+
+            // Ensure we have restaurant info from each item
+            let restaurantId = null;
+            if (cart.items[0].restaurantId) {
+                restaurantId = cart.items[0].restaurantId;
+            } else if (cart.items[0].restaurant) {
+                restaurantId = typeof cart.items[0].restaurant === 'object'
+                    ? cart.items[0].restaurant._id
+                    : cart.items[0].restaurant;
+            }
+
+            if (!restaurantId) {
+                console.error("Restaurant ID not found");
+                alert('Restaurant information missing.');
+                return;
+            }
+
+            // Make sure all required fields have values
+            const orderData = {
+                user: user._id,
+                userName: user.name || 'Customer',
+                items: cart.items.map(item => ({
+                    productId: item.productId || item._id, // Ensure productId exists
+                    quantity: item.quantity,
+                    price: item.price,
+                    name: item.name,
+                    image: item.image || '', // Provide default if missing
+                    restaurant: item.restaurantId || restaurantId
+                })),
+                deliveryAddress: {
+                    name: address.name || user.name || 'Customer',
+                    description: address.description,
+                    street: address.street,
+                    coordinates: position
+                },
+                deliveryOption,
+                deliveryInstructions: instructions || '',
+                phoneNumber: user.phone || phoneNumber,
+                subtotal: orderSummary.subtotal,
+                tax: orderSummary.tax,
+                deliveryFee: orderSummary.deliveryFee,
+                serviceFee: orderSummary.serviceFee,
+                promotionDiscount: orderSummary.promotion,
+                total,
+                paymentMethod: selectedPaymentMethod,
+                restaurant: restaurantId,
+                estimatedDeliveryTime: new Date(Date.now() + 35 * 60 * 1000),
+                status: selectedPaymentMethod === 'cash' ? 'confirmed' : 'pending'
+            };
+
+            // Log the order data to debug
+            console.log("Sending order data:", JSON.stringify(orderData, null, 2));
+
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) throw new Error('Authentication token not found');
+
+            const orderResponse = await axios.post('http://localhost:5559/orders', orderData, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!orderResponse.data.success) {
+                throw new Error(orderResponse.data.message || 'Failed to create order');
+            }
+
+            const orderId = orderResponse.data.order._id;
+
+            if (selectedPaymentMethod === 'cash') {
+                await clearCart();
+                navigate('/pending', {
+                    state: {
+                        orderId,
+                        total: orderResponse.data.order.total
+                    }
+                });
+                return;
+            }
+
+            navigate('/stripe', {
+                state: {
+                    orderId,
+                    total,
+                    userId: user._id
+                }
+            });
+
+        } catch (error) {
+            console.error('Order placement failed:', error);
+
+            // More detailed error logging
+            if (error.response && error.response.data) {
+                console.error('Server response:', error.response.data);
+            }
+
+            alert(error.response?.data?.message || 'Failed to place order. Please try again.');
+        }
+    };
+
     if (loading && !cart) {
         return (
             <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
@@ -173,7 +272,6 @@ const Checkout = () => {
         );
     }
 
-    // Error state
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
@@ -189,134 +287,6 @@ const Checkout = () => {
             </div>
         );
     }
-
-    const handlePlaceOrder = async () => {
-        try {
-            // Check if user is authenticated
-            if (!user) {
-                alert('Please login to place an order');
-                navigate('/login');
-                return;
-            }
-
-            // Validate cart data
-            if (!cart || !cart.items || cart.items.length === 0) {
-                alert('Your cart is empty. Please add items before checkout.');
-                return;
-            }
-
-            // Find the restaurant ID from the first item
-            let restaurantId = null;
-            if (cart.items[0].restaurantId) {
-                restaurantId = cart.items[0].restaurantId;
-            } else if (cart.items[0].restaurant) {
-                restaurantId = typeof cart.items[0].restaurant === 'object'
-                    ? cart.items[0].restaurant._id
-                    : cart.items[0].restaurant;
-            }
-
-            if (!restaurantId) {
-                console.error("Restaurant ID not found in cart items:", cart.items);
-                alert('Restaurant information missing. Please try adding items again.');
-                return;
-            }
-
-            // Prepare order data with all required fields
-            const orderData = {
-                user: user._id,
-                userName: user.name || 'Customer',
-                items: cart.items.map(item => {
-                    let itemRestaurantId = item.restaurantId;
-                    if (!itemRestaurantId && item.restaurant) {
-                        itemRestaurantId = typeof item.restaurant === 'object'
-                            ? item.restaurant._id
-                            : item.restaurant;
-                    }
-
-                    return {
-                        productId: item.productId,
-                        quantity: item.quantity,
-                        price: item.price,
-                        name: item.name,
-                        image: item.image,
-                        restaurant: itemRestaurantId || restaurantId
-                    };
-                }),
-                deliveryAddress: {
-                    name: user.name || 'Customer',
-                    description: address.description,
-                    street: address.street,
-                    coordinates: position
-                },
-                deliveryOption,
-                deliveryInstructions: instructions,
-                phoneNumber: user.phone || phoneNumber,
-                subtotal: orderSummary.subtotal,
-                tax: orderSummary.tax,
-                deliveryFee: orderSummary.deliveryFee,
-                serviceFee: orderSummary.serviceFee,
-                promotionDiscount: orderSummary.promotion,
-                total,
-                paymentMethod: selectedPaymentMethod,
-                restaurant: restaurantId,
-                estimatedDeliveryTime: new Date(Date.now() + 35 * 60 * 1000)
-            };
-
-            // If paying with card, redirect to Stripe payment page
-            if (selectedPaymentMethod === 'card') {
-                navigate('/stripe-payment', {
-                    state: {
-                        total,
-                        orderData,
-                        fromCheckout: true
-                    }
-                });
-                return;
-            }
-
-            // For cash payments, proceed directly to order creation
-            const authToken = localStorage.getItem('authToken');
-            if (!authToken) {
-                throw new Error('Authentication token not found');
-            }
-
-            const response = await axios.post('http://localhost:5559/orders', orderData, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.data.success) {
-                await clearCart();
-                navigate('/pending', {
-                    state: {
-                        orderId: response.data.order._id,
-                        total: response.data.order.total
-                    }
-                });
-            } else {
-                throw new Error(response.data.message || 'Failed to place order');
-            }
-
-        } catch (error) {
-            console.error('Order placement failed:', error);
-            console.error('Error details:', error.response?.data);
-
-            let errorMessage = 'Failed to place order. Please try again.';
-
-            if (error.response) {
-                if (error.response.data?.message) {
-                    errorMessage = error.response.data.message;
-                }
-                if (error.response.data?.errors) {
-                    errorMessage += `: ${error.response.data.errors.join(', ')}`;
-                }
-            }
-
-            alert(errorMessage);
-        }
-    };
 
     return (
         <div className="min-h-screen bg-gray-50 pt-16">
@@ -537,8 +507,8 @@ const Checkout = () => {
                                             <CreditCard className="w-6 h-6 text-gray-500 mr-3"/>
                                         )}
                                         <span className="font-medium">
-                    {selectedPaymentMethod === 'cash' ? 'Cash' : 'Credit/Debit Card'}
-                </span>
+                                            {selectedPaymentMethod === 'cash' ? 'Cash' : 'Credit/Debit Card'}
+                                        </span>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-gray-400"/>
                                 </button>
@@ -553,8 +523,7 @@ const Checkout = () => {
                                             className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'cash' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                                         >
                                             {selectedPaymentMethod === 'cash' && (
-                                                <div
-                                                    className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
                                                     <Check className="w-3 h-3 text-white"/>
                                                 </div>
                                             )}
@@ -562,18 +531,21 @@ const Checkout = () => {
                                         </button>
 
                                         <button
-                                            onClick={() => navigate('/stripe', {state: {total: total}})}
-                                            className="w-full text-left p-4 border border-gray-200 rounded-lg flex
-                                            items-center hover:bg-gray-50"
-                                            >
-                                        <div
-                                            className="w-5 h-5 border-2 border-gray-300 rounded-full flex items-center justify-center mr-3">
-                                            <Plus className="w-3 h-3 text-gray-400"/>
-                                        </div>
-                                        <span className="text-red-600 font-medium">Add New Card</span>
-                                    </button>
+                                            onClick={() => {
+                                                setSelectedPaymentMethod('card');
+                                                setShowPaymentMethods(false);
+                                            }}
+                                            className={`w-full text-left p-4 border rounded-lg flex items-center ${selectedPaymentMethod === 'card' ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                                        >
+                                            {selectedPaymentMethod === 'card' && (
+                                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                                                    <Check className="w-3 h-3 text-white"/>
+                                                </div>
+                                            )}
+                                            <span>Credit/Debit Card</span>
+                                        </button>
                                     </div>
-                                    )}
+                                )}
                             </div>
                         </div>
 

@@ -1,10 +1,18 @@
 const Order = require('../models/OrderModel');
-const User = require('../../../AuthService/src/models/User'); // Import User model to access user data
+const User = require('../../../AuthService/src/models/User');
+const {
+    publishOrderCreated,
+    publishOrderUpdated,
+    publishOrderCancelled
+} = require('../services/orderEventPublisher');
 
 exports.createOrder = async (req, res) => {
     try {
         // Extract data from request body sent by frontend checkout
         const orderData = req.body;
+
+        // Log received data for debugging
+        console.log('Received order data:', JSON.stringify(orderData, null, 2));
 
         // Get user ID from authentication token
         if (req.user) {
@@ -18,36 +26,121 @@ exports.createOrder = async (req, res) => {
                     if (user) {
                         orderData.user = user._id;
                     } else {
-                        return res.status(400).json({ message: 'User not found' });
+                        return res.status(400).json({
+                            success: false,
+                            message: 'User not found',
+                            details: 'Could not find user with the provided username'
+                        });
                     }
                 } catch (err) {
                     console.error('Error finding user:', err);
-                    return res.status(400).json({ message: 'User ID is required' });
+                    return res.status(400).json({
+                        success: false,
+                        message: 'User ID is required',
+                        details: err.message
+                    });
                 }
             }
         }
 
-        // Create the new order with the data from checkout
-        const newOrder = new Order(orderData);
-        const savedOrder = await newOrder.save();
-
-        // Return success response that matches what the frontend expects
-        res.status(201).json({
-            success: true,
-            message: 'Order created successfully',
-            order: savedOrder
-        });
-    } catch (error) {
-        console.error('Error creating order:', error);
-
-        // Handle mongoose validation errors
-        if (error.name === 'ValidationError') {
+        // Verify the data before creating the order
+        if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Validation error',
-                error: error.message
+                details: 'Order must have at least one item'
             });
         }
+
+        // Make sure all required fields in items are present
+        for (let i = 0; i < orderData.items.length; i++) {
+            const item = orderData.items[i];
+            if (!item.productId || !item.quantity || !item.price || !item.name || !item.restaurant) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation error',
+                    details: Item at index ${i} is missing required fields,
+                    item
+                });
+            }
+        }
+
+        // Validate delivery address
+        if (!orderData.deliveryAddress ||
+            !orderData.deliveryAddress.name ||
+            !orderData.deliveryAddress.description ||
+            !orderData.deliveryAddress.street ||
+            !orderData.deliveryAddress.coordinates ||
+            !Array.isArray(orderData.deliveryAddress.coordinates) ||
+            orderData.deliveryAddress.coordinates.length !== 2) {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                details: 'Delivery address is invalid or missing required fields',
+                address: orderData.deliveryAddress
+            });
+        }
+
+        // For card payments, set initial payment status
+        if (orderData.paymentMethod === 'card') {
+            orderData.paymentStatus = 'pending';
+            orderData.status = 'payment_pending';
+        }
+
+        // Create the new order with the data from checkout
+        const newOrder = new Order(orderData);
+
+        // Attempt to save and catch any validation errors
+        try {
+            const savedOrder = await newOrder.save();
+
+            // Publish order created event to RabbitMQ
+            try {
+                await publishOrderCreated({
+                    orderId: savedOrder._id,
+                    userId: savedOrder.user,
+                    restaurantId: savedOrder.items[0].restaurant, // Assuming single restaurant per order
+                    items: savedOrder.items,
+                    totalAmount: savedOrder.totalAmount,
+                    deliveryAddress: savedOrder.deliveryAddress,
+                    status: savedOrder.status,
+                    paymentStatus: savedOrder.paymentStatus,
+                    createdAt: savedOrder.createdAt
+                });
+
+                console.log('Order created event published successfully');
+            } catch (mqError) {
+                console.error('Failed to publish order created event:', mqError);
+                // Implement fallback mechanism here (e.g., store in DB for later retry)
+            }
+
+            // Return success response that matches what the frontend expects
+            res.status(201).json({
+                success: true,
+                message: 'Order created successfully',
+                order: savedOrder
+            });
+        } catch (validationError) {
+            console.error('Validation error during order save:', validationError);
+
+            // Process mongoose validation errors for better feedback
+            if (validationError.name === 'ValidationError') {
+                const errors = {};
+                for (const field in validationError.errors) {
+                    errors[field] = validationError.errors[field].message;
+                }
+
+                return res.status(400).json({
+                    success: false,
+                    message: 'Validation error',
+                    errors
+                });
+            }
+
+            throw validationError; // Re-throw for the outer catch
+        }
+    } catch (error) {
+        console.error('Error creating order:', error);
 
         // Handle other errors
         res.status(500).json({
@@ -57,85 +150,184 @@ exports.createOrder = async (req, res) => {
         });
     }
 };
-// controllers/orderController.js
-exports.getRestaurantOrders = async (req, res) => {
+
+exports.updatePaymentStatus = async (req, res) => {
     try {
-        const restaurantId = req.user.restaurantId;
-        const { status } = req.query;
+        const { orderId } = req.params;
+        const { paymentIntentId } = req.body;
 
-        const query = { 
-            'items.restaurant': restaurantId,
-            ...(status && { status })
-        };
+        if (!orderId || !paymentIntentId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order ID and Payment Intent ID are required'
+            });
+        }
 
-        const orders = await Order.find(query)
-            // Remove .populate('user') completely
-            .populate('items.productId', 'name')
-            .sort({ createdAt: -1 });
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            {
+                paymentId: paymentIntentId,
+                paymentStatus: 'completed',
+                status: 'confirmed'
+            },
+            { new: true }
+        );
+
+        if (!updatedOrder) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Publish order updated event to RabbitMQ
+        try {
+            await publishOrderUpdated({
+                orderId: updatedOrder._id,
+                newStatus: updatedOrder.status,
+                paymentStatus: updatedOrder.paymentStatus,
+                updatedAt: updatedOrder.updatedAt
+            });
+
+            console.log('Order updated event published successfully');
+        } catch (mqError) {
+            console.error('Failed to publish order updated event:', mqError);
+            // Implement fallback mechanism here
+        }
 
         res.status(200).json({
             success: true,
-            count: orders.length,
-            orders
+            message: 'Payment status updated successfully',
+            order: updatedOrder
         });
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error updating payment status:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch orders',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Failed to update payment status',
+            error: error.message
+        });
+    }
+};
+
+exports.cancelOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { cancellationReason } = req.body;
+
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order ID is required'
+            });
+        }
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Check if order can be cancelled (based on current status)
+        if (!['pending', 'confirmed', 'payment_pending'].includes(order.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order cannot be cancelled at this stage'
+            });
+        }
+
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            {
+                status: 'cancelled',
+                cancellationReason: cancellationReason || 'Customer request',
+                cancelledAt: new Date()
+            },
+            { new: true }
+        );
+
+        // Publish order cancelled event to RabbitMQ
+        try {
+            await publishOrderCancelled({
+                orderId: updatedOrder._id,
+                restaurantId: updatedOrder.items[0].restaurant,
+                cancellationReason: updatedOrder.cancellationReason,
+                cancelledAt: updatedOrder.cancelledAt
+            });
+
+            console.log('Order cancelled event published successfully');
+        } catch (mqError) {
+            console.error('Failed to publish order cancelled event:', mqError);
+            // Implement fallback mechanism here
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order cancelled successfully',
+            order: updatedOrder
+        });
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to cancel order',
+            error: error.message
         });
     }
 };
 
 exports.updateOrderStatus = async (req, res) => {
     try {
-        const restaurantId = req.user.restaurantId;
         const { orderId } = req.params;
         const { status } = req.body;
 
-        if (!restaurantId) {
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied. Restaurant association required.'
-            });
-        }
-
-        // Verify the order belongs to this restaurant
-        const order = await Order.findOne({
-            _id: orderId,
-            'items.restaurant': restaurantId
-        });
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Order not found or not associated with your restaurant'
-            });
-        }
-
-        // Validate status transition
-        const validTransitions = {
-            'confirmed': ['preparing', 'canceled'],
-            'preparing': ['picked-up', 'canceled'],
-            'picked-up': ['delivered'],
-            // Other status transitions as needed
-        };
-
-        if (!validTransitions[order.status]?.includes(status)) {
+        if (!orderId || !status) {
             return res.status(400).json({
                 success: false,
-                message: `Invalid status transition from ${order.status} to ${status}`
+                message: 'Order ID and status are required'
             });
         }
 
-        order.status = status;
-        await order.save();
+        const validStatuses = ['preparing', 'ready_for_delivery', 'out_for_delivery', 'delivered'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status value'
+            });
+        }
+
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            { status },
+            { new: true }
+        );
+
+        if (!updatedOrder) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Publish order updated event to RabbitMQ
+        try {
+            await publishOrderUpdated({
+                orderId: updatedOrder._id,
+                newStatus: updatedOrder.status,
+                updatedAt: updatedOrder.updatedAt
+            });
+
+            console.log('Order status update event published successfully');
+        } catch (mqError) {
+            console.error('Failed to publish order status update event:', mqError);
+        }
 
         res.status(200).json({
             success: true,
             message: 'Order status updated successfully',
-            order
+            order: updatedOrder
         });
     } catch (error) {
         console.error('Error updating order status:', error);

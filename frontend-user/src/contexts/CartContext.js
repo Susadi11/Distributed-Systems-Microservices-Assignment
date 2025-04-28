@@ -15,7 +15,7 @@ export const CartProvider = ({ children }) => {
 
         try {
             setLoading(true);
-            const response = await axios.get('http://localhost:8080/api/orders/cart');
+            const response = await axios.get('http://localhost:5559/cart');
             setCart(response.data.cart);
         } catch (err) {
             console.error('Failed to fetch cart:', err);
@@ -62,7 +62,7 @@ export const CartProvider = ({ children }) => {
                 image: imageData || '/default-product.png'
             };
 
-            const response = await axios.post('http://localhost:8080/api/orders/cart/add', payload);
+            const response = await axios.post('http://localhost:5559/cart/add', payload);
             setCart(response.data.cart);
             return { success: true, cart: response.data.cart };
         } catch (err) {
@@ -77,7 +77,7 @@ export const CartProvider = ({ children }) => {
     const updateQuantity = async (productId, newQuantity) => {
         try {
             setLoading(true);
-            const response = await axios.put('http://localhost:8080/api/orders/cart/update', {
+            const response = await axios.put('http://localhost:5559/cart/update', {
                 productId,
                 quantity: newQuantity
             });
@@ -96,7 +96,7 @@ export const CartProvider = ({ children }) => {
     const removeFromCart = async (productId) => {
         try {
             setLoading(true);
-            const response = await axios.delete(`http://localhost:8080/api/orders/cart/remove/${productId}`);
+            const response = await axios.delete(`http://localhost:5559/cart/remove/${productId}`);
             setCart(response.data.cart);
             return { success: true, cart: response.data.cart };
         } catch (err) {
@@ -111,13 +111,26 @@ export const CartProvider = ({ children }) => {
     const clearCart = async () => {
         try {
             setLoading(true);
-            await axios.delete('http://localhost:8080/api/orders/cart/clear');
+            setError(null);
+
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                throw new Error('Authentication token not found');
+            }
+
+            const response = await axios.delete('http://localhost:5559/cart/clear', {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
             setCart({ user: user?.id, items: [] });
-            return { success: true };
+            return { success: true, message: 'Cart cleared successfully' };
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to clear cart');
+            const errorMsg = err.response?.data?.error || 'Failed to clear cart';
+            setError(errorMsg);
             console.error('Clear cart error:', err);
-            return { success: false, error: err.message };
+            return { success: false, error: errorMsg };
         } finally {
             setLoading(false);
         }

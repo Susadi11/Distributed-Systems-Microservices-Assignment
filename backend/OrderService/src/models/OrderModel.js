@@ -44,22 +44,39 @@ const deliveryAddressSchema = new mongoose.Schema({
     },
     coordinates: {
         type: [Number], // [longitude, latitude]
-        required: true
+        required: true,
+        validate: {
+            validator: function(v) {
+                return v && v.length === 2;
+            },
+            message: props => `Coordinates must have exactly 2 values (longitude and latitude)`
+        }
     }
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        required: false
     },
     userName: {
         type: String,
         required: true
     },
-    items: [orderItemSchema],
-    deliveryAddress: deliveryAddressSchema,
+    items: {
+        type: [orderItemSchema],
+        required: true,
+        validate: {
+            validator: function(v) {
+                return Array.isArray(v) && v.length > 0;
+            },
+            message: props => `Order must have at least one item`
+        }
+    },
+    deliveryAddress: {
+        type: deliveryAddressSchema,
+        required: true
+    },
     deliveryOption: {
         type: String,
         enum: ['door', 'lobby'],
@@ -72,19 +89,23 @@ const orderSchema = new mongoose.Schema({
     },
     subtotal: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     deliveryFee: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     serviceFee: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     tax: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     promotionDiscount: {
         type: Number,
@@ -92,16 +113,17 @@ const orderSchema = new mongoose.Schema({
     },
     total: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     paymentMethod: {
         type: String,
         enum: ['cash', 'card'],
         required: true
     },
-    paymentId: {  // Add this new field
+    paymentId: {
         type: String,
-        required: function() { return this.paymentMethod === 'card'; }
+        required: false
     },
     paymentStatus: {
         type: String,
@@ -110,7 +132,7 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['confirmed', 'finding-driver', 'preparing', 'picked-up', 'delivered','canceled'],
+        enum: ['confirmed', 'finding-driver', 'preparing', 'picked-up', 'delivered', 'canceled', 'pending', 'payment_pending'],
         default: 'confirmed'
     },
     estimatedDeliveryTime: {
@@ -119,11 +141,31 @@ const orderSchema = new mongoose.Schema({
     },
     restaurant: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Restaurant'
+        ref: 'Restaurant',
+        required: true
     }
 }, {
     timestamps: true
 });
 
+// Add a pre-save hook to handle any last-minute validation or data formatting
+orderSchema.pre('save', function(next) {
+    // If paymentMethod is cash, ensure status is set to confirmed
+    if (this.paymentMethod === 'cash' && !this.status) {
+        this.status = 'confirmed';
+    }
+
+    // If paymentMethod is card, ensure proper payment status
+    if (this.paymentMethod === 'card') {
+        if (!this.paymentStatus) {
+            this.paymentStatus = 'pending';
+        }
+        if (!this.status) {
+            this.status = 'payment_pending';
+        }
+    }
+
+    next();
+});
 
 module.exports = mongoose.model('Order', orderSchema);
