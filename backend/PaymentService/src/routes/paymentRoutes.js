@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 
+
+router.get('/', (req, res) => {
+    res.json({ message: 'Payment Service API' });
+  });
+
 // Route to handle creating a payment intent
 router.post('/create-payment-intent', paymentController.createPaymentIntent);
 
