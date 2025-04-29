@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 5554;
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/deliveries", deliveryRoutes);
+app.use("/deliveries", deliveryRoutes);
 
 async function bootstrap() {
   // 1. Connect to MongoDB

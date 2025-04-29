@@ -9,12 +9,12 @@ import {
 const router = express.Router();
 
 router.get(
-    '/', 
+    '/getall', 
     getAllDeliveries
 );
 
 router.post(
-    '/', 
+    '/create', 
     createDelivery
 );
 

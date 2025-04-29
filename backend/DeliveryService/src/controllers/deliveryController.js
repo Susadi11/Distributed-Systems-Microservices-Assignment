@@ -12,8 +12,11 @@ export const createDelivery = async (req, res) => {
       status, // Optional - will default to "pending" if not provided
     });
 
+    console.log("New delivery created:", newDelivery);
+
     const savedDelivery = await newDelivery.save();
     res.status(201).json(savedDelivery);
+
   } catch (error) {
     console.error("Error creating delivery:", error);
     res.status(500).json({ message: "Failed to create delivery", error: error.message });
