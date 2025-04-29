@@ -16,6 +16,7 @@
     "nodemon": "^3.1.9"
   },
   "dependencies": {
+    "@mapbox/mapbox-gl-directions": "^4.3.1",
     "amqplib": "^0.10.7",
     "axios": "^1.9.0",
     "body-parser": "^1.20.3",
