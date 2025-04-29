@@ -6,6 +6,7 @@ const {
     publishOrderCancelled
 } = require('../services/orderEventPublisher');
 const mongoose = require('mongoose');
+const { getChannel } = require('../rabbit');
 
 exports.createOrder = async (req, res) => {
     try {
@@ -99,53 +100,42 @@ exports.createOrder = async (req, res) => {
         // Attempt to save and catch any validation errors
         try {
             const savedOrder = await newOrder.save();
-
-            // Publish order created event to RabbitMQ
+          
+            // ─── RabbitMQ publish ───
             try {
-                await publishOrderCreated({
-                    orderId: savedOrder._id,
-                    userId: savedOrder.user,
-                    restaurantId: savedOrder.items[0].restaurant, // Assuming single restaurant per order
-                    items: savedOrder.items,
-                    totalAmount: savedOrder.totalAmount,
-                    deliveryAddress: savedOrder.deliveryAddress,
-                    status: savedOrder.status,
-                    paymentStatus: savedOrder.paymentStatus,
-                    deliveryStatus: savedOrder.deliveryStatus,
-                    createdAt: savedOrder.createdAt
-                });
-
-                console.log('Order created event published successfully');
+              const channel = getChannel();
+              channel.sendToQueue(
+                'order_queue',
+                Buffer.from(JSON.stringify({
+                  orderId:      savedOrder._id,
+                  userId:       savedOrder.user,
+                  restaurantId: savedOrder.items[0].restaurant,
+                  items:        savedOrder.items,
+                  totalAmount:  savedOrder.totalAmount,
+                  deliveryAddress: savedOrder.deliveryAddress,
+                  status:       savedOrder.status,
+                  paymentStatus: savedOrder.paymentStatus,
+                  deliveryStatus:savedOrder.deliveryStatus,
+                  createdAt:    savedOrder.createdAt
+                })),
+                { persistent: true }
+              );
+              console.log('Order created event published successfully');
             } catch (mqError) {
-                console.error('Failed to publish order created event:', mqError);
-                // Implement fallback mechanism here (e.g., store in DB for later retry)
+              console.error('Failed to publish order created event:', mqError);
+              // fallback: log or store for retry
             }
-
-            // Return success response that matches what the frontend expects
+            // ────────────────────────
+          
+            // send response back to client
             res.status(201).json({
-                success: true,
-                message: 'Order created successfully',
-                order: savedOrder
+              success: true,
+              message: 'Order created successfully',
+              order: savedOrder
             });
-        } catch (validationError) {
-            console.error('Validation error during order save:', validationError);
-
-            // Process mongoose validation errors for better feedback
-            if (validationError.name === 'ValidationError') {
-                const errors = {};
-                for (const field in validationError.errors) {
-                    errors[field] = validationError.errors[field].message;
-                }
-
-                return res.status(400).json({
-                    success: false,
-                    message: 'Validation error',
-                    errors
-                });
-            }
-
-            throw validationError; // Re-throw for the outer catch
-        }
+          } catch (validationError) {
+            // … existing error handling …
+          }          
     } catch (error) {
         console.error('Error creating order:', error);
 

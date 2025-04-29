@@ -374,6 +374,27 @@ router.get("/delivery-personnel/available", async (req, res) => {
   }
 });
 
+router.get('/api/drivers', async (req, res) => {
+  const { status } = req.query;
+  try {
+    // Build a filter for delivery personnel
+    const filter = { role: 'delivery_personnel' };
+
+    // If a status query is provided, normalize and apply it
+    if (status) {
+      // Normalize e.g. 'available' → 'Available'
+      const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+      filter['deliveryPersonnelDetails.status'] = normalized;
+    }
+
+    const drivers = await User.find(filter).select('-password');
+    res.json(drivers);
+  } catch (error) {
+    console.error('Error fetching drivers:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // In your backend routes (e.g., userRoutes.js)
 router.get("/me", authMiddleware(), async (req, res) => {
     try {
@@ -383,5 +404,6 @@ router.get("/me", authMiddleware(), async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 module.exports = router;
