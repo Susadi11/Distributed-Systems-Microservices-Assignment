@@ -21,23 +21,20 @@ app.use('/orders', orderRoutes);
 
 // Single bootstrap: connect DB, RabbitMQ, then start HTTP server
 async function bootstrap() {
-  // 1. MongoDB
   await mongoose.connect(process.env.MONGOURI);
   console.log('🗄️  Connected to MongoDB');
 
-  // 2. RabbitMQ
   const channel = await connectRabbit();
   await channel.assertQueue('order_queue', { durable: true });
-  console.log('🐰 Connected to RabbitMQ & asserted order_queue');
+  console.log('Connected to RabbitMQ & asserted order_queue');
 
-  // 3. HTTP
   app.listen(PORT, () => {
-    console.log(`🚀 OrderService listening on port ${PORT}`);
+    console.log(`OrderService listening on port ${PORT}`);
   });
 }
 
 bootstrap().catch(err => {
-  console.error('❌ Failed to start OrderService:', err);
+  console.error('Failed to start OrderService:', err);
   process.exit(1);
 });
 

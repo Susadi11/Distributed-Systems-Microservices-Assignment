@@ -15,13 +15,9 @@ spec:
       containers:
         - name: order-service
           image: order-service:latest
-          imagePullPolicy: Never  # because we use local image
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5559
-          env:
-            - name: MONGOURI
-              value: "mongodb://your-mongodb-service:27017/orderdb"
-            - name: FRONTEND_URL
-              value: "http://localhost:3000"
-            - name: RABBITMQ_URL
-              value: "amqp://your-rabbitmq-service:5672"
+          envFrom:
+            - configMapRef:
+                name: order-service-config
