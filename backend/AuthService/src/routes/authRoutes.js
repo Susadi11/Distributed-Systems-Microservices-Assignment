@@ -374,4 +374,14 @@ router.get("/delivery-personnel/available", async (req, res) => {
   }
 });
 
+// In your backend routes (e.g., userRoutes.js)
+router.get("/me", authMiddleware(), async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+        res.json({ user });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 module.exports = router;

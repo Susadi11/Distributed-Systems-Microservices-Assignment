@@ -130,7 +130,7 @@ const Checkout = () => {
             setPosition([user.location.coordinates[0], user.location.coordinates[1]]);
             if (user.address) {
                 setAddress({
-                    name: 'Your Address',
+                    name: user.name,
                     description: user.address,
                     street: user.address.split(',')[0] || user.address
                 });
