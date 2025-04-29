@@ -2,22 +2,19 @@ import mongoose from "mongoose";
 
 const DeliverySchema = new mongoose.Schema({
   orderId: { 
-    type: String, 
+    type: mongoose.Schema.Types.ObjectId,
     required: true 
   }, // Order ID from OrderService
   driverId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "Driver",
     required: true 
   }, // Driver assigned
   restaurantId: {
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "Restaurant",
     required: true 
   },
   customer: {
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "Order",
     required: true 
   },
   status: {
