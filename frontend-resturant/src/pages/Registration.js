@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Upload } from 'lucide-react';
+import { Check, Upload, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Registration = () => {
@@ -17,7 +17,10 @@ const Registration = () => {
     state: '',
     postalCode: '',
     email: '',
-    termsAccepted: false
+    termsAccepted: false,
+    // Add new location fields
+    latitude: '',
+    longitude: ''
   });
 
   // Replace profileImage with profileImageBase64
@@ -29,8 +32,9 @@ const Registration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState(null);
   
-
 
   const businessTypes = [
     'Restaurant',
@@ -77,6 +81,35 @@ const Registration = () => {
     }
   };
 
+  // New function to get current location
+  const getCurrentLocation = () => {
+    setLocationLoading(true);
+    setLocationError(null);
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setFormData(prev => ({
+            ...prev,
+            latitude: latitude.toFixed(6),
+            longitude: longitude.toFixed(6)
+          }));
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          setLocationError('Unable to get your location. Please enter coordinates manually or try again.');
+          setLocationLoading(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setLocationError('Geolocation is not supported by this browser.');
+      setLocationLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -96,8 +129,6 @@ const Registration = () => {
       setIsSubmitting(false);
       return;
     }
-  
-   
   
     try {
       // Create request data object including all form fields and Base64 image
@@ -123,7 +154,7 @@ const Registration = () => {
       const responseData = await response.json();
       
       if (responseData.data?.token) {
-        localStorage.setItem(responseData.data.token);
+        localStorage.setItem('token', responseData.data.token);
       }
   
       setSubmitSuccess(true);
@@ -143,7 +174,9 @@ const Registration = () => {
         state: '',
         postalCode: '',
         email: '',
-        termsAccepted: false
+        termsAccepted: false,
+        latitude: '',
+        longitude: ''
       });
       
       setProfileImageBase64(null);
@@ -157,39 +190,6 @@ const Registration = () => {
     }
   };
 
-  // const handleGoToLogin = () => {
-  //   navigate('/login');
-  // };
-
-  // if (submitSuccess) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-  //       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
-  //         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-  //           <Check className="h-8 w-8 text-green-600" />
-  //         </div>
-  //         <h2 className="text-2xl font-bold text-gray-800 mb-2">Waiting for Approval!</h2>
-  //         <p className="text-gray-600 mb-6">
-  //           Thank you for registering your restaurant. We'll review your application and give you access soon.
-  //         </p>
-  //         <div className="space-y-3">
-  //           <button
-  //             onClick={handleGoToLogin}
-  //             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
-  //           >
-  //             Go to Dashboard
-  //           </button>
-  //           <button
-  //             onClick={() => setSubmitSuccess(false)}
-  //             className="w-full py-2 px-4 border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-lg"
-  //           >
-  //             Register Another Restaurant
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Full Image with Overlay Text */}
@@ -225,7 +225,7 @@ const Registration = () => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-1/2 p-12 flex items-center justify-center bg-white">
+      <div className="w-1/2 p-12 flex items-center justify-center bg-white overflow-y-auto">
         <div className="w-full max-w-md">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Register Your Restaurant</h1>
           <p className="text-gray-600 mb-8">
@@ -302,7 +302,7 @@ const Registration = () => {
               </div>
             </div>
 
-            {/* Rest of the form fields remain the same */}
+            {/* Restaurant Address Section */}
             <div>
               <label htmlFor="storeAddress" className="block text-sm font-medium text-gray-700 mb-1">
                 Store address
@@ -378,6 +378,62 @@ const Registration = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
+            </div>
+
+            {/* Location Coordinates Section */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Location Coordinates
+                </label>
+                <button
+                  type="button"
+                  onClick={getCurrentLocation}
+                  className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                  disabled={locationLoading}
+                >
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {locationLoading ? 'Getting location...' : 'Get Current Location'}
+                </button>
+              </div>
+              
+              {locationError && (
+                <div className="mb-2 text-sm text-red-600">
+                  {locationError}
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="latitude" className="block text-sm text-gray-500 mb-1">
+                    Latitude
+                  </label>
+                  <input
+                    type="text"
+                    id="latitude"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={handleChange}
+                    placeholder="e.g., 6.927079"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="longitude" className="block text-sm text-gray-500 mb-1">
+                    Longitude
+                  </label>
+                  <input
+                    type="text"
+                    id="longitude"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={handleChange}
+                    placeholder="e.g., 79.861244"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">These coordinates help customers find your location accurately.</p>
             </div>
 
             <div>

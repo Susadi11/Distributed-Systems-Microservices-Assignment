@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restaurant-admin-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restaurant-admin-service
+  template:
+    metadata:
+      labels:
+        app: restaurant-admin-service
+    spec:
+      containers:
+        - name: restaurant-admin-service
+          image: restaurant-admin-service:latest  # Locally built image
+          imagePullPolicy: Never  # Don't pull from registry, use local image
+          ports:
+            - containerPort: 5556
+          envFrom:
+            - configMapRef:
+                name: restaurant-admin-config
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: "256Mi"

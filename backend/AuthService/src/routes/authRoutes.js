@@ -56,16 +56,11 @@ router.post("/register", async (req, res) => {
     // Create user
     const newUser = await User.create(userData);
 
-    const token = jwt.sign(
-      { id: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+   
 
     console.log("User created successfully:", newUser);
     res.status(201).json({
       message: "User registered successfully",
-      token,
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -378,5 +373,37 @@ router.get("/delivery-personnel/available", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+router.get('/api/drivers', async (req, res) => {
+  const { status } = req.query;
+  try {
+    // Build a filter for delivery personnel
+    const filter = { role: 'delivery_personnel' };
+
+    // If a status query is provided, normalize and apply it
+    if (status) {
+      // Normalize e.g. 'available' → 'Available'
+      const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+      filter['deliveryPersonnelDetails.status'] = normalized;
+    }
+
+    const drivers = await User.find(filter).select('-password');
+    res.json(drivers);
+  } catch (error) {
+    console.error('Error fetching drivers:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// In your backend routes (e.g., userRoutes.js)
+router.get("/me", authMiddleware(), async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+        res.json({ user });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 
 module.exports = router;

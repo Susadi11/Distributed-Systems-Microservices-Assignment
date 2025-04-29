@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
     Check,
     Clock,
@@ -30,12 +31,16 @@ const phases = [
 
 const Pending = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [currentPhase, setCurrentPhase] = useState(1);
     const [orderStatus, setOrderStatus] = useState('pending');
     const [driverInfo, setDriverInfo] = useState(null);
     const [estimatedTime, setEstimatedTime] = useState('25-35 min');
     const [mapLoaded, setMapLoaded] = useState(false);
     const [mapError, setMapError] = useState(false);
+    const [orderDetails, setOrderDetails] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [locationLoading, setLocationLoading] = useState(true);
 
     // Map references
     const mapContainer = useRef(null);
@@ -52,50 +57,31 @@ const Pending = () => {
     const [userPosition, setUserPosition] = useState([79.9730, 6.9147]); // Default to SLIIT [lng, lat]
     const [driverPosition, setDriverPosition] = useState([79.9680, 6.9120]); // Initial random driver position [lng, lat]
     const [routePath, setRoutePath] = useState([]);
-    const CurrentIcon = phases[currentPhase - 1].icon;
-
-    // Order details
-    const orderDetails = {
-        orderId: 'UB38921EF',
-        restaurant: 'Barista Malabe',
-        items: [
-            { name: 'Barista Express', quantity: 1, price: 1250 },
-            { name: 'Cappuccino', quantity: 2, price: 450 },
-            { name: 'Chocolate Cake', quantity: 1, price: 650 }
-        ],
-        subtotal: 2800,
-        deliveryFee: 200,
-        discount: 150,
-        total: 2850
-    };
+    const CurrentIcon = phases[currentPhase - 1]?.icon || AlertCircle;
 
     // Initialize Mapbox map
-    useEffect(() => {
+    const initializeMap = (center) => {
         if (!process.env.REACT_APP_MAPBOX_TOKEN) {
             console.error("Missing Mapbox token - add REACT_APP_MAPBOX_TOKEN to .env");
             setMapError(true);
             return;
         }
 
-        if (map.current) return; // Initialize map only once
+        if (map.current) return;
 
         try {
             map.current = new mapboxgl.Map({
                 container: mapContainer.current,
                 style: 'mapbox://styles/mapbox/streets-v12',
-                center: userPosition,
+                center: center,
                 zoom: 15
             });
 
-            // Add navigation controls
             map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
             map.current.on('load', () => {
                 setMapLoaded(true);
                 updateMarkers();
-                if (routePath.length > 0) {
-                    updateRoute();
-                }
             });
 
             map.current.on('error', (e) => {
@@ -107,38 +93,140 @@ const Pending = () => {
             console.error("Error initializing Mapbox:", error);
             setMapError(true);
         }
+    };
 
-        return () => {
-            if (map.current) {
-                map.current.remove();
-                map.current = null;
-            }
-        };
-    }, []);
-
-    // Get user's current location
-    useEffect(() => {
+    // Get browser location as fallback
+    const getBrowserLocation = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const newPos = [position.coords.longitude, position.coords.latitude];
                     setUserPosition(newPos);
-                    if (map.current) {
+
+                    if (!map.current) {
+                        initializeMap(newPos);
+                    } else {
                         map.current.flyTo({
                             center: newPos,
                             zoom: 15,
                             essential: true
                         });
                     }
+                    setLocationLoading(false);
                 },
                 (error) => {
-                    console.error("Error getting location:", error);
-                    // Fallback to SLIIT coordinates if location access is denied
+                    console.error("Error getting browser location:", error);
                     setUserPosition([79.9730, 6.9147]);
+                    if (!map.current) {
+                        initializeMap([79.9730, 6.9147]);
+                    }
+                    setLocationLoading(false);
                 }
             );
+        } else {
+            setUserPosition([79.9730, 6.9147]);
+            if (!map.current) {
+                initializeMap([79.9730, 6.9147]);
+            }
+            setLocationLoading(false);
         }
-    }, []);
+    };
+
+    // Fetch user's location from backend
+    const fetchUserLocation = async () => {
+        setLocationLoading(true);
+        try {
+            const response = await axios.get('http://localhost:5559/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (response.data.location && response.data.location.coordinates) {
+                const [longitude, latitude] = response.data.location.coordinates;
+                setUserPosition([longitude, latitude]);
+
+                if (!map.current) {
+                    initializeMap([longitude, latitude]);
+                } else {
+                    map.current.flyTo({
+                        center: [longitude, latitude],
+                        zoom: 15,
+                        essential: true
+                    });
+                }
+            } else {
+                getBrowserLocation();
+            }
+        } catch (error) {
+            console.error("Error fetching user location:", error);
+            getBrowserLocation();
+        } finally {
+            setLocationLoading(false);
+        }
+    };
+
+    // Fetch order details from API
+    useEffect(() => {
+        const fetchOrderDetails = async () => {
+            if (!location.state || !location.state.orderId) {
+                navigate('/checkout');
+                return;
+            }
+
+            try {
+                const { data } = await axios.get(`http://localhost:5559/orders/${location.state.orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+
+                setOrderDetails({
+                    orderId: data._id || data.orderId,
+                    restaurant: data.restaurantName || "Restaurant",
+                    items: data.items.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price
+                    })),
+                    subtotal: data.subtotal || calculateSubtotal(data.items),
+                    deliveryFee: data.deliveryFee || 200,
+                    discount: data.discount || 0,
+                    total: data.total || location.state.total
+                });
+
+                if (data.restaurantLocation && data.restaurantLocation.coordinates) {
+                    setRestaurantPosition(data.restaurantLocation.coordinates);
+                }
+
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching order details:", error);
+                if (location.state && location.state.total) {
+                    setOrderDetails({
+                        orderId: location.state.orderId,
+                        restaurant: "Restaurant",
+                        items: [{name: "Food Item", quantity: 1, price: location.state.total}],
+                        subtotal: location.state.total - 200,
+                        deliveryFee: 200,
+                        discount: 0,
+                        total: location.state.total
+                    });
+                    setLoading(false);
+                } else {
+                    navigate('/checkout');
+                }
+            }
+        };
+
+        fetchOrderDetails();
+        fetchUserLocation();
+    }, [location, navigate]);
+
+    // Helper function to calculate subtotal
+    const calculateSubtotal = (items) => {
+        return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    };
 
     // Generate a path for the driver
     useEffect(() => {
@@ -228,7 +316,7 @@ const Pending = () => {
         })
             .setLngLat(restaurantPosition)
             .setPopup(new mapboxgl.Popup().setHTML(`
-                <div class="font-medium">${orderDetails.restaurant}</div>
+                <div class="font-medium">${orderDetails?.restaurant || 'Restaurant'}</div>
                 <div class="text-sm">Preparing your order</div>
             `))
             .addTo(map.current);
@@ -367,6 +455,8 @@ const Pending = () => {
 
     // Simulate order progress
     useEffect(() => {
+        if (loading || locationLoading) return;
+
         const timeouts = [];
 
         // Phase 1: Restaurant Confirmation (0-7s)
@@ -376,7 +466,7 @@ const Pending = () => {
 
         timeouts.push(setTimeout(() => {
             setOrderStatus('payment_charged');
-            setCurrentPhase(2); // Move to Phase 2: Finding Driver
+            setCurrentPhase(2);
         }, 7000));
 
         // Phase 2: Finding Driver (7-15s)
@@ -394,7 +484,7 @@ const Pending = () => {
                 phone: '+94 71 234 5678'
             });
             setOrderStatus('driver_assigned');
-            setCurrentPhase(3); // Move to Phase 3: Order Preparation
+            setCurrentPhase(3);
         }, 15000));
 
         timeouts.push(setTimeout(() => {
@@ -404,13 +494,13 @@ const Pending = () => {
         // Phase 4: Order Pickup (35-45s)
         timeouts.push(setTimeout(() => {
             setOrderStatus('ready_for_pickup');
-            setCurrentPhase(4); // Move to Phase 4: Order Pickup
+            setCurrentPhase(4);
         }, 35000));
 
         // Phase 5: Delivery (45s+)
         timeouts.push(setTimeout(() => {
             setOrderStatus('picked_up');
-            setCurrentPhase(5); // Move to Phase 5: Delivery
+            setCurrentPhase(5);
 
             // Simulate driver movement
             const moveDriver = setInterval(() => {
@@ -439,7 +529,7 @@ const Pending = () => {
                 }
             });
         };
-    }, [userPosition]);
+    }, [userPosition, loading, locationLoading]);
 
     // Status messages based on order status
     const getStatusMessage = () => {
@@ -448,10 +538,10 @@ const Pending = () => {
             case 'accepted': return 'Restaurant accepted your order!';
             case 'payment_charged': return 'Payment successful! Finding a driver for you.';
             case 'finding_driver': return 'Looking for a delivery partner...';
-            case 'driver_assigned': return `${driverInfo.name} will pick up your order`;
+            case 'driver_assigned': return `${driverInfo?.name} will pick up your order`;
             case 'preparing': return 'Restaurant is preparing your order';
             case 'ready_for_pickup': return 'Your order is ready for pickup';
-            case 'picked_up': return `${driverInfo.name} is on the way to you`;
+            case 'picked_up': return `${driverInfo?.name} is on the way to you`;
             case 'arrived': return 'Your order has arrived!';
             default: return 'Processing your order...';
         }
@@ -463,6 +553,17 @@ const Pending = () => {
         if (currentPhase >= 3) return `Arriving in ${estimatedTime}`;
         return `Estimated arrival: ${estimatedTime}`;
     };
+
+    if (loading || locationLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading order details...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white mt-20">
@@ -553,8 +654,8 @@ const Pending = () => {
                                         <CurrentIcon className={`w-6 h-6 ${currentPhase > phases.length ? 'text-green-600' : 'text-red-600'}`}/>
                                     </div>
                                     <div className="ml-3">
-                                        <h4 className="font-medium text-gray-900">{phases[currentPhase - 1].label}</h4>
-                                        <p className="text-sm text-gray-600">{phases[currentPhase - 1].description}</p>
+                                        <h4 className="font-medium text-gray-900">{phases[currentPhase - 1]?.label || 'Processing'}</h4>
+                                        <p className="text-sm text-gray-600">{phases[currentPhase - 1]?.description || 'Processing your order'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -585,7 +686,6 @@ const Pending = () => {
                         <div className="bg-white p-4 rounded-xl shadow-sm">
                             <h3 className="font-semibold text-gray-900 mb-3">Track your order</h3>
                             <div className="h-96 rounded-xl overflow-hidden border border-gray-200 relative">
-                                {/* Error state for map */}
                                 {mapError && (
                                     <div className="absolute inset-0 bg-gray-100 flex items-center justify-center flex-col p-4">
                                         <p className="text-red-600 font-medium mb-2">Unable to load map</p>
@@ -593,7 +693,6 @@ const Pending = () => {
                                     </div>
                                 )}
 
-                                {/* Loading state */}
                                 {!mapLoaded && !mapError && (
                                     <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
                                         <p>Loading map...</p>
