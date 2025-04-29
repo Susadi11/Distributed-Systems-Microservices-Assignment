@@ -127,36 +127,32 @@ export const AuthProvider = ({ children }) => {
     }
 };
 
-  const register = async (userData) => {
-    setAuthError(null);
-    setIsLoading(true);
-    
-    try {
-      const { data } = await authApi.post('/auth/register', userData);
-      
-      // Check for successful response structure
-      if (data.token && data.user) {
-        localStorage.setItem('authToken', data.token);
-        authApi.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-        restaurantApi.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-        setUser(data.user);
-        toast.success(data.message || 'Registered successfully');
-        navigate('/register');
-      } else {
-        throw new Error('Unexpected response format');
-      }
-      
-      return data.user;
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || error.message || "Registration failed";
-      setAuthError(errorMessage);
-      toast.error(errorMessage);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const register = async (userData) => {
+  setAuthError(null);
+  setIsLoading(true);
   
+  try {
+    const { data } = await authApi.post('/auth/register', userData);
+    
+    // Handle successful registration without immediate login
+    if (data.user) {
+      toast.success(data.message || 'Registered successfully');
+      navigate('/register'); // Redirect to login page instead
+      return data.user;
+    }
+    
+    throw new Error('Unexpected response format');
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || 
+                       error.message || 
+                       "Registration failed";
+    setAuthError(errorMessage);
+    toast.error(errorMessage);
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
   const logout = () => {
     localStorage.removeItem('authToken');
     delete authApi.defaults.headers.common['Authorization'];

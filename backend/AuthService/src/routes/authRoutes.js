@@ -56,16 +56,11 @@ router.post("/register", async (req, res) => {
     // Create user
     const newUser = await User.create(userData);
 
-    const token = jwt.sign(
-      { id: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+   
 
     console.log("User created successfully:", newUser);
     res.status(201).json({
       message: "User registered successfully",
-      token,
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -399,5 +394,16 @@ router.get('/api/drivers', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// In your backend routes (e.g., userRoutes.js)
+router.get("/me", authMiddleware(), async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+        res.json({ user });
+    } catch (error) {
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 
 module.exports = router;
