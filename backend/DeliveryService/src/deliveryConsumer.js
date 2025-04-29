@@ -1,6 +1,5 @@
 // src/deliveryConsumer.js
 import axios from 'axios';
-import Delivery from './models/Delivery.js';
 import { connectRabbit, getChannel } from './rabbit.js';
 
 const AUTH_SVC_URL = process.env.AUTH_SVC_URL;      // e.g. http://localhost:5560
@@ -37,35 +36,34 @@ export default async function startConsumer() {
       }
       const driver = drivers[0];
 
-      // --- b) Mark that driver as assigned in AuthService ---
+      console.log('driver:', driver);
+
       await axios.patch(`http://localhost:8080/api/auth/api/drivers/${driver._id}`, {
         status: 'assigned',
         currentOrder: orderId
       });
 
-      // --- c) Create the Delivery record locally ---
-      await Delivery.create({
-        orderId,
-        driverId: driver._id,
-        restaurantId,
-        customer,
-        status: 'assigned'
-      });
+      await axios.post(
+        `http://localhost:8080/api/delivery/deliveries/create`,
+        {
+          orderId,
+          driverId: driver._id,
+          restaurantId,
+          customer,
+          status: 'assigned'
+        }
+      );
 
-      // --- d) Notify driver however you like ---
-      await notifyDriver(driver, orderId);
+    //   await notifyDriver(driver, orderId);
 
-      // --- e) (Optional) let OrderService know the driver assignment ---
       await axios.post(`http://localhost:8080/api/orders/orders/${orderId}/assign`, {
         driverId: driver._id
       });
 
-      // --- f) Ack the message ---
       channel.ack(msg);
       console.log(`✔️  Driver ${driver._id} assigned, Delivery created`);
     } catch (err) {
       console.error('❌ Error in deliveryConsumer:', err);
-      // retry later
       channel.nack(msg, false, true);
     }
   }, { noAck: false });
