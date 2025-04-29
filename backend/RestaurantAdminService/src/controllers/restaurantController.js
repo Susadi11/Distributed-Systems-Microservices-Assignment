@@ -1,6 +1,8 @@
 const Restaurant = require('../models/Restaurant');
 const mongoose = require('mongoose');
 
+const jwt = require('jsonwebtoken');
+
 exports.registerRestaurant = async (req, res) => {
   try {
     // Validate required fields
@@ -40,15 +42,42 @@ exports.registerRestaurant = async (req, res) => {
     }
     
     // Validate phone number format
-    const phoneRegex = /^[0-9]{10,15}$/;
+    const phoneRegex = /^[0-9]{9,15}$/;
     if (!phoneRegex.test(req.body.phoneNumber)) {
       return res.status(400).json({
         success: false,
-        message: 'Please enter a valid phone number (10-15 digits)'
+        message: 'Please enter a valid phone number (9-15 digits)'
+      });
+    }
+
+    // Check if terms are accepted
+    if (!req.body.termsAccepted) {
+      return res.status(400).json({
+        success: false,
+        message: 'You must accept the terms and conditions'
       });
     }
     
-    // Create new restaurant
+    // Check if a restaurant with this email already exists
+    const existingRestaurant = await Restaurant.findOne({ 'contact.email': req.body.email });
+    if (existingRestaurant) {
+      return res.status(400).json({
+        success: false,
+        message: 'A restaurant with this email already exists'
+      });
+    }
+
+    // Process location coordinates
+    let coordinates = [0, 0]; // Default [longitude, latitude]
+    if (req.body.longitude && req.body.latitude) {
+      // MongoDB uses [longitude, latitude] order for GeoJSON
+      coordinates = [
+        parseFloat(req.body.longitude), 
+        parseFloat(req.body.latitude)
+      ];
+    }
+
+    // Create restaurant object with proper schema structure
     const newRestaurant = new Restaurant({
       storeName: req.body.storeName,
       brandName: req.body.brandName,
@@ -58,7 +87,12 @@ exports.registerRestaurant = async (req, res) => {
         floorSuite: req.body.floorSuite || '',
         city: req.body.city,
         state: req.body.state,
-        postalCode: req.body.postalCode
+        postalCode: req.body.postalCode,
+        country: 'Sri Lanka' // Default country
+      },
+      location: {
+        type: 'Point',
+        coordinates: coordinates
       },
       contact: {
         firstName: req.body.firstName,
@@ -70,41 +104,60 @@ exports.registerRestaurant = async (req, res) => {
         email: req.body.email
       },
       termsAccepted: req.body.termsAccepted,
-    
+      status: 'pending',
+      registrationDate: new Date()
     });
-    
-    // Handle Base64 image
+
+    // Handle profile image if provided
     if (req.body.profileImageBase64) {
-      // Store the Base64 string directly in the database
-      newRestaurant.profileImage = [req.body.profileImageBase64];
+      // Validate base64 image format
+      if (req.body.profileImageBase64.startsWith('data:image/')) {
+        newRestaurant.profileImage = [req.body.profileImageBase64];
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid image format. Image must be in base64 format'
+        });
+      }
     }
-    
-    // Save restaurant
+
+    // Save the new restaurant
     const savedRestaurant = await newRestaurant.save();
-    
-    
+
+    // Generate JWT token for immediate login
+    const token = jwt.sign(
+      { 
+        id: savedRestaurant._id,
+        email: savedRestaurant.contact.email,
+        role: 'restaurant'
+      },
+      process.env.JWT_SECRET || 'your_jwt_secret', // Make sure to set JWT_SECRET in your environment
+      { expiresIn: '7d' }
+    );
+
+    // Return success response with token
     res.status(201).json({
       success: true,
+      message: 'Restaurant registration successful. Awaiting approval.',
       data: {
-      
         restaurant: {
           id: savedRestaurant._id,
           storeName: savedRestaurant.storeName,
           email: savedRestaurant.contact.email,
-          profileImage: savedRestaurant.profileImage
-        }
-      },
-      message: 'Restaurant registered successfully!'
+          status: savedRestaurant.status
+        },
+        token
+      }
     });
     
   } catch (error) {
     console.error('Registration error:', error);
     
-    // Handle duplicate email error
+    // Handle MongoDB duplicate key error
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: 'This email is already registered'
+        message: 'A restaurant with this email already exists'
       });
     }
     
@@ -117,14 +170,13 @@ exports.registerRestaurant = async (req, res) => {
       });
     }
     
-    // Handle other errors
+    // Generic error
     res.status(500).json({
       success: false,
-      message: 'Server error during registration'
+      message: 'Server error during registration. Please try again later.'
     });
   }
 };
-
 // Endpoint to find a restaurant by contact email.  This is used for general restaurant retrieval.
 exports.findRestaurantByEmail = async (req, res) => {
   try {

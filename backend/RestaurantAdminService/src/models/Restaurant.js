@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-
 const restaurantSchema = new mongoose.Schema({
   storeName: {
     type: String,
@@ -42,6 +41,18 @@ const restaurantSchema = new mongoose.Schema({
     country: {
       type: String,
       default: 'Sri Lanka'
+    }
+  },
+  // Adding GeoJSON location field for geospatial queries
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0]
     }
   },
   contact: {
@@ -133,11 +144,12 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
-  
- 
 }, { timestamps: true });
 
+// Create a 2dsphere index for geospatial queries
+restaurantSchema.index({ location: '2dsphere' });
 
+// Text index for search functionality
 restaurantSchema.index({
   'storeName': 'text',
   'brandName': 'text',
