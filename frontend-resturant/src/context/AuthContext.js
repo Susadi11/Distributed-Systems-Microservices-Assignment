@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
           if (restaurantResponse.data.restaurant) {
             const status = restaurantResponse.data.restaurant.status.toLowerCase();
             
-            if (status !== 'approved') {
+            if (status !== 'verified') {
               let errorMessage = "Your restaurant account is pending approval.";
               
               if (status === 'pending') {

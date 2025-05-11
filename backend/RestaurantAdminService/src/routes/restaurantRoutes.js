@@ -14,6 +14,7 @@ router.get('/', restaurantController.getRestaurants);
 router.get('/email/:email', restaurantController.findRestaurantByEmail);
 router.get('/admin/:email', restaurantController.findRestaurantByAdminEmail);
 
+
 router.get('/user/:userId', restaurantController.getRestaurantByUserId);
 
 

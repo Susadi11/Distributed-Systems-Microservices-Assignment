@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authservice
+  template:
+    metadata:
+      labels:
+        app: authservice
+    spec:
+      containers:
+        - name: authservice
+          image: vindiperera/authservice:latest
+ # Name of the Docker image in your registry (you can use Docker Hub or a private registry)
+          ports:
+            - containerPort: 5555
+          envFrom:
+            - configMapRef:
+                name: authservice-env  # Refers to the ConfigMap to load env variables

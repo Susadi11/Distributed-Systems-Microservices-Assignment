@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: authservice
+spec:
+  type: LoadBalancer  # Exposes the service externally (or use ClusterIP for internal access only)
+  selector:
+    app: authservice
+  ports:
+    - protocol: TCP
+      port: 5555
+      targetPort: 5555

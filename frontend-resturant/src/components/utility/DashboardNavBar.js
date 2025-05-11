@@ -1,12 +1,20 @@
 import React from "react";
 import { BellIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 function DashboardNavBar() {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get the user from auth context
+  
+  // Get the restaurant name from user context
+  const restaurantName = user?.restaurant?.storeName || "Restaurant Dashboard";
+  const restaurantId = user?.restaurant?._id;
+
   const handleClick = () => {
-    navigate("/profile"); 
-  }// Navigate to the home page when the logo is clicked
+    navigate("/profile");
+  };
+
   return (
     <nav className="bg-white border-b border-gray-200 dark:bg-gray-900 px-4 py-3">
       <div className="max-w-screen-xl mx-auto flex items-center justify-between">
@@ -14,8 +22,13 @@ function DashboardNavBar() {
         <div className="flex items-center space-x-3">
           <img src="https://cdn-icons-png.freepik.com/256/6130/6130226.png" alt="Logo" className="h-8" />
           <span className="text-3xl font-bold text-red-800 dark:text-white">
-            The Lounge
+            {restaurantName}
           </span>
+          {restaurantId && (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {restaurantId.storeName}
+            </span>
+          )}
         </div>
 
         {/* Middle: Search bar */}
@@ -70,12 +83,20 @@ function DashboardNavBar() {
             <BellIcon className="w-6 h-6" />
           </button>
 
-          {/* Profile icon */}
-          <button 
-          onClick={handleClick}
-          className="text-gray-500 dark:text-gray-300 hover:text-blue-600">
-            <UserCircleIcon className="w-8 h-8" />
-          </button>
+          {/* Profile section with username */}
+          <div className="flex items-center space-x-2">
+            {user && (
+              <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {user.name}
+              </span>
+            )}
+            <button
+              onClick={handleClick}
+              className="text-gray-500 dark:text-gray-300 hover:text-blue-600"
+            >
+              <UserCircleIcon className="w-8 h-8" />
+            </button>
+          </div>
         </div>
       </div>
     </nav>

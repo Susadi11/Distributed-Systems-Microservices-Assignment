@@ -51,6 +51,21 @@ const Sidebar = () => {
           </li>
         )}
 
+{restaurantId && (
+          <li className="group">
+            <Link 
+              to={`/restaurant/${restaurantId}/payments`} 
+              className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            >
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="w-5 h-5" />
+                <span>Payments</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+            </Link>
+          </li>
+        )}
+
         {/* Add Product */}
         <li className="group">
           <Link 
@@ -79,20 +94,8 @@ const Sidebar = () => {
           </Link>
         </li>
 
-        {/* Notifications */}
-        <li className="group">
-          <Link 
-            to="/notifications" 
-            className="flex items-center justify-between p-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-          >
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5" />
-              <span>Notifications</span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
-          </Link>
-        </li>
-
+       
+        
         {/* Settings */}
         <li className="group">
           <Link 

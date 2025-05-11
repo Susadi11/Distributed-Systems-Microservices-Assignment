@@ -128,7 +128,7 @@ router.post("/login", async (req, res) => {
                 });
             }
 
-            if (restaurant.status.toLowerCase() !== 'approved') {
+            if (restaurant.status.toLowerCase() !== 'verified') {
                 const statusMessage = restaurant.status.toLowerCase();
                 let friendlyMessage = "Your restaurant account is pending approval.";
                 

@@ -367,7 +367,7 @@ exports.getRestaurants = async (req, res) => {
     const { status } = req.query;
 
     // Always filter by status (default to approved if not specified)
-    const filter = status ? { status } : { status: 'approved' };
+    const filter = status ? { status } : { status: 'verified' };
 
     const restaurants = await Restaurant.find(filter)
         .select('-password -__v')

@@ -1,12 +1,9 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import { Navigate } from "react-router-dom";
-// import Home from "./pages/Home";
 import Signup from "./pages/SignUp";
 import Login from "./pages/Login";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
-import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -17,6 +14,7 @@ import HomePage from "./pages/HomePage";
 
 import MainPage from "./pages/MainPage";
 import RestaurantOrders from "./pages/RestaurantOrders";
+import RestaurantPayments from "./pages/RestaurantPayments";
 
 
 
@@ -55,6 +53,15 @@ export default function App() {
           element={
             <PrivateRoute allowedRoles={['resturant_admin']}>
               <AddProduct />
+            </PrivateRoute>
+          }
+        />
+
+<Route
+          path="/restaurant/:restaurantId/payments"
+          element={
+            <PrivateRoute allowedRoles={['resturant_admin']}>
+              <RestaurantPayments />
             </PrivateRoute>
           }
         />

@@ -353,3 +353,93 @@ exports.getOrdersByRestaurant = async (req, res) => {
         });
     }
 };
+
+// Get payment information by restaurant ID (using order data)
+exports.getPaymentsDataByRestaurant = async (req, res) => {
+    try {
+        const { restaurantId } = req.params;
+        console.log('Received request for restaurant payment data with ID:', restaurantId);
+
+        // Validate restaurant ID
+        if (!restaurantId || restaurantId.trim() === '') {
+            console.log('Restaurant ID is empty or undefined');
+            return res.status(400).json({
+                success: false,
+                message: 'Restaurant ID is required'
+            });
+        }
+
+        let restaurantObjectId;
+        try {
+            // Try to convert to ObjectId
+            restaurantObjectId = new mongoose.Types.ObjectId(restaurantId);
+            console.log('Converted to valid ObjectId:', restaurantObjectId);
+        } catch (err) {
+            console.log('Failed to convert to ObjectId:', err.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid restaurant ID format'
+            });
+        }
+
+        // Get query parameters for filtering
+        const { paymentStatus, startDate, endDate, limit = 50, page = 1 } = req.query;
+
+        // Build query object for orders with payment info
+        const query = {
+            restaurant: restaurantObjectId,
+            paymentMethod: { $exists: true }, // Only orders with payment info
+            ...(paymentStatus && { paymentStatus }),
+            ...(startDate && { createdAt: { $gte: new Date(startDate) } }),
+            ...(endDate && { createdAt: { $lte: new Date(endDate) } })
+        };
+
+        console.log('Query for payment data:', JSON.stringify(query));
+
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+
+        // Get orders with payment info
+        const orders = await Order.find(query)
+            .sort({ createdAt: -1 }) // newest first
+            .skip(skip)
+            .limit(parseInt(limit))
+            .populate('user', 'name email phone'); // Populate user info if needed
+
+        console.log(`Found ${orders.length} orders with payment info for restaurant`);
+
+        // Get total count for pagination
+        const totalOrders = await Order.countDocuments(query);
+
+        // Calculate payment statistics
+        const totalPayments = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+        const pendingPayments = orders
+            .filter(order => order.paymentStatus === 'pending')
+            .reduce((sum, order) => sum + (order.total || 0), 0);
+        const completedPayments = orders
+            .filter(order => order.paymentStatus === 'completed')
+            .reduce((sum, order) => sum + (order.total || 0), 0);
+
+        // Format the response
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            total: totalOrders,
+            page: parseInt(page),
+            pages: Math.ceil(totalOrders / limit),
+            stats: {
+                totalPayments,
+                pendingPayments,
+                completedPayments
+            },
+            orders
+        });
+    } catch (error) {
+        console.error('Error fetching restaurant payment data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch payment data',
+            error: error.message
+        });
+    }
+};

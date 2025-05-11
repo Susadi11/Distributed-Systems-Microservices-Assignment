@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authservice-env
+data:
+  MONGOURI: "mongodb+srv://susadisandanima:AqQjkpD0JlBbf0pF@cluster0.fc9dr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+  JWT_SECRET: "ff4e8d60cb5698fec1f0c970459fc93e65e4489182f03402d487c7e0adf50834"
+  GOOGLE_MAPS_API_KEY: "AIzaSyBgzcRP0gtstMI1bkAD0NxwXNMH64LzHpM"

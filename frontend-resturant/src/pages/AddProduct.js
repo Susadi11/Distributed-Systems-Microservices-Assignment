@@ -456,13 +456,13 @@ function AddProduct() {
               )}
 
               {/* Debug information - remove in production */}
-              {(userId && restaurantId) && (
+              {/* {(userId && restaurantId) && (
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded text-xs">
                   <p className="text-gray-500 dark:text-gray-400">Token information loaded:</p>
                   <p className="text-gray-600 dark:text-gray-300">User ID: {userId}</p>
                   <p className="text-gray-600 dark:text-gray-300">Restaurant ID: {restaurantId}</p>
                 </div>
-              )}
+              )} */}
 
               {/* Submit Button */}
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">

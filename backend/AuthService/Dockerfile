@@ -1,40 +1,20 @@
-# Use Node.js official image
+# Use official Node.js image
 FROM node:18
 
-# Set working directory inside the container
+# Set working directory inside container
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
-
-# Install dependencies
-RUN npm# Use Node.js official image
-FROM node:18
-
-# Set working directory inside the container
-WORKDIR /app
-
-# Copy package.json and package-lock.json
+# Copy package.json and package-lock.json first (for efficient caching)
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of your application code
+# Copy the rest of the application (including src folder)
 COPY . .
 
-# Expose the port your AuthService uses
-EXPOSE 5000
+# Expose the app port
+EXPOSE 5555
 
-# Start the service
-CMD ["npm", "start"]
-install
-
-# Copy the rest of your application code
-COPY . .
-
-# Expose the port your AuthService uses
-EXPOSE 5000
-
-# Start the service
-CMD ["npm", "start"]
+# Set the command to run your app (pointing to src/index.js)
+CMD ["node", "src/index.js"]
