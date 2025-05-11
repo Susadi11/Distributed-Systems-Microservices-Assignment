@@ -64,7 +64,7 @@ function MainPage() {
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="text-2xl font-bold text-red-600 cursor-pointer flex items-center">
                         <FaUtensils className="mr-2" />
-                        <span onClick={() => navigate('/')}>FoodFleet Pro</span>
+                        <span onClick={() => navigate('/')}>Yum Yum</span>
                     </div>
                     <div className="flex items-center space-x-6">
                         <button
